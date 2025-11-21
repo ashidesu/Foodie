@@ -2,12 +2,8 @@ import React, { useState, useRef } from 'react';
 import { Upload, Video, FileText, Monitor, Lightbulb } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid'; // For generating video ID
 import { db, auth } from '../firebase'; // Assuming Firebase is configured and exported
-import { createClient } from '@supabase/supabase-js';
 import { collection, addDoc } from 'firebase/firestore'; // Add this import for v9+ Firestore
-import  supabase  from '../supabase.js'
-
-// Supabase configuration (replace with your actual URL and key)
-
+import supabase from '../supabase.js'; // Assuming Supabase client is configured and exported
 
 import '../styles/upload-page.css';
 
