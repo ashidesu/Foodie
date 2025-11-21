@@ -1,0 +1,165 @@
+/* feed.css */
+.main-content {
+    margin-left: 250px;
+    height: 100vh;
+    width: 100%;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+    background-color: #ffffff;
+    overflow-y: auto;
+    padding: 0;
+}
+
+.videoBox {
+    height: 100vh;
+    scroll-snap-align: start;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.videoContainer {
+    display: flex;
+    width: 100%;
+    max-width: 500px;
+    position: relative;
+}
+
+.videoBorder {
+    flex: 1;
+    position: relative;
+    height: 85vh;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.videoBorder video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    border-radius: 12px;
+}
+
+.uploaderDetails {
+    position: absolute;
+    bottom: 20px;
+    left: 15px;
+    color: white;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+    z-index: 10;
+}
+
+.uploaderName {
+    font-weight: bold;
+    margin: 0;
+    font-size: 18px;
+}
+
+.uploaderUsername,
+.timeUploaded {
+    margin: 4px 0;
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.playPauseOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    cursor: pointer;
+    z-index: 5;
+}
+
+.videoBorder:hover .playPauseOverlay {
+    opacity: 1;
+}
+
+.sideBarDiv {
+    position: absolute;
+    right: -80px;
+    bottom: 100px;
+    z-index: 20;
+}
+
+.sideBar {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+.sideBar li {
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    display: flex;
+    justify-content: center;
+}
+
+.sideBar li:hover {
+    transform: scale(1.1);
+}
+
+.sideBar svg {
+    width: 24px;
+    height: 24px;
+    color: white;
+    filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.7));
+}
+
+.iconContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.iconContainer span {
+    color: white;
+    font-size: 12px;
+    font-weight: 500;
+    text-shadow: 0 0 2px rgba(0, 0, 0, 0.7);
+}
+
+/* Custom scrollbar for main content */
+.main-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.main-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.main-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+.main-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+.profile-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover; /* Ensures the image fits nicely */
+}
+  .profile-pic-icon {
+    width: 24px; /* Adjust size */
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  

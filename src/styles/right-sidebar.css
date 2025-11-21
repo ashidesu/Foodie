@@ -1,0 +1,148 @@
+.right-sidebar {
+    width: 250px;
+    min-width: 250px;
+    background-color: #f5f5f5;
+    border-left: 1px solid #ddd;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.profile-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.profile-header h3 {
+    margin: 0 0 16px 0;
+    color: #333;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.profile-content {
+    text-align: center;
+}
+
+.profile-avatar {
+    margin-bottom: 16px;
+}
+
+.avatar-image {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #e0e0e0;
+}
+
+.avatar-placeholder {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    margin: 0 auto;
+    border: 3px solid #e0e0e0;
+}
+
+.profile-info {
+    margin-bottom: 16px;
+}
+
+.display-name {
+    margin: 0 0 4px 0;
+    color: #333;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.username {
+    margin: 0 0 8px 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.email {
+    margin: 0;
+    color: #888;
+    font-size: 12px;
+    word-break: break-all;
+}
+
+.anonymous-badge {
+    background: #ffeb3b;
+    color: #333;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    display: inline-block;
+}
+
+.profile-loading,
+.profile-not-logged-in {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+}
+
+.profile-not-logged-in p {
+    margin: 0;
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+    .right-sidebar {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .right-sidebar {
+        display: none;
+    }
+}
+
+.following-section {
+    margin-top: 20px;
+}
+
+.following-list {
+    list-style: none;
+    padding: 0;
+}
+
+.following-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.followed-avatar img,
+.avatar-placeholder-small {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+}
+
+.followed-info {
+    margin-left: 10px;
+}
+
+.mutual-badge {
+    color: green;
+    font-size: 0.8em;
+}
+
+.see-more {
+    color: blue;
+    text-decoration: underline;
+}

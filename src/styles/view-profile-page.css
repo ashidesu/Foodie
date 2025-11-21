@@ -1,0 +1,389 @@
+/* Container and scrollbar */
+.profile-page-container {
+  flex: 1;
+  overflow-y: auto;
+  background-color: black;
+  margin-left: 250px; /* Adjust if sidebar width changes */
+  scrollbar-width: none; /* Firefox */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: white;
+  padding: 16px 24px 40px; /* Add bottom padding for scrolling */
+}
+
+.profile-page-container::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge */
+}
+
+/* Profile header area */
+.profile-header-container {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+/* Profile avatar with pink circle border */
+.profile-avatar-large {
+  position: relative;
+  width: 114px;
+  height: 114px;
+  border-radius: 50%;
+  border: 3.5px solid #ff004f; /* Bright pink ring */
+  padding: 3px;
+  box-sizing: content-box;
+  cursor: pointer;
+  overflow: visible;
+}
+
+.profile-avatar-large img,
+.avatar-placeholder-large {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: #222;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  font-weight: bold;
+  color: white;
+  user-select: none;
+}
+
+/* Live badge below avatar (pink background white text) */
+.profile-avatar-live-badge {
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #ff004f;
+  color: white;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 12px;
+  box-shadow: 0 0 6px rgba(255, 0, 79, 0.6);
+  user-select: none;
+  pointer-events: none;
+}
+
+/* User information next to avatar, stacked vertically */
+.user-info {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+/* Username line with username and tag */
+.username-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Username (bold, larger font) */
+.username-line .username {
+  font-weight: 700;
+  font-size: 28px;
+  color: white;
+  user-select: text;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Small username tag (lighter color) */
+.username-line .display-name {
+  font-size: 18px;
+  color: #aaa;
+  user-select: text;
+  white-space: nowrap;
+  opacity: 0.8;
+}
+
+/* Profile action buttons container */
+.profile-buttons {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  user-select: none;
+}
+
+/* Follow button - bright pink */
+.btn-follow {
+  background-color: #ff004f;
+  border: none;
+  padding: 10px 26px;
+  border-radius: 6px;
+  color: white;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  white-space: nowrap;
+}
+
+.btn-follow:hover,
+.btn-follow:focus {
+  background-color: #e60042;
+  outline: none;
+}
+
+/* Other buttons - message, add user, share, options */
+.btn-message,
+.btn-add-user,
+.btn-share,
+.btn-more {
+  background-color: #222;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 6px;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+/* Icons inside buttons for add/share/options can be SVG or unicode */
+.btn-add-user::before {
+  content: '➕';
+  margin-right: 6px;
+}
+
+.btn-share::before {
+  content: '↗️';
+  margin-right: 6px;
+}
+
+.btn-more::before {
+  content: '⋯';
+  margin-right: 6px;
+}
+
+.btn-message:hover,
+.btn-add-user:hover,
+.btn-share:hover,
+.btn-more:hover,
+.btn-message:focus,
+.btn-add-user:focus,
+.btn-share:focus,
+.btn-more:focus {
+  background-color: #333;
+  outline: none;
+}
+
+/* Profile stats line below buttons */
+.profile-stats {
+  margin-top: 18px;
+  font-size: 16px;
+  color: #ccc;
+  user-select: text;
+  display: flex;
+  gap: 32px;
+  font-weight: 600;
+}
+
+/* Individual stat */
+.profile-stats span {
+  cursor: default;
+  user-select: text;
+}
+
+.profile-stats strong {
+  color: white;
+  font-weight: 700;
+}
+
+/* Profile bio text */
+.profile-bio {
+  margin-top: 12px;
+  font-size: 16px;
+  color: #ccc;
+  user-select: text;
+  max-width: 600px;
+  line-height: 1.4;
+}
+
+/* Tabs navigation below bio */
+.profile-tabs {
+  border-bottom: 1px solid #222;
+  display: flex;
+  gap: 24px;
+  margin: 36px 0 20px 0;
+  font-weight: 700;
+  font-size: 16px;
+  user-select: none;
+}
+
+/* Tabs buttons */
+.tab-item {
+  color: #666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 12px;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-weight: 700;
+  transition: color 0.3s ease, border-bottom-color 0.3s ease;
+}
+
+.tab-item.active,
+.tab-item:hover {
+  border-bottom: 3px solid white;
+  color: white;
+}
+
+/* Videos container grid */
+.videos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(184px, 1fr));
+  gap: 16px;
+  justify-content: start;
+}
+
+/* Video card container */
+.video-card {
+  background-color: #111;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  transition: filter 0.2s ease;
+  width: 184px;
+}
+
+.video-card:hover {
+  filter: brightness(1.1);
+}
+
+/* Thumbnail with fixed 9:16 aspect ratio */
+.video-thumbnail {
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  background-position: center;
+  background-size: cover;
+  position: relative;
+  border-radius: 8px 8px 0 0;
+  overflow: hidden;
+}
+
+/* Views count overlay in bottom-left */
+.video-views {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  background-color: rgba(0, 0, 0, 0.6);
+  border-radius: 12px;
+  padding: 4px 10px;
+  font-size: 14px;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+}
+
+/* Locked video icon overlay bottom-right */
+.video-lock {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background-color: rgba(0, 0, 0, 0.6);
+  border-radius: 50%;
+  padding: 4px 8px;
+  font-size: 18px;
+  color: white;
+  user-select: none;
+}
+
+/* Video caption under thumbnail */
+.video-caption {
+  padding: 8px 12px;
+  font-weight: 700;
+  color: white;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  user-select: text;
+  flex-grow: 1;
+}
+
+/* Responsive styles for smaller screens */
+@media (max-width: 900px) {
+  .profile-header-container {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .user-info {
+    margin-top: 20px;
+  }
+
+  .username-line {
+    justify-content: center;
+  }
+
+  .profile-buttons {
+    justify-content: center;
+  }
+
+  .profile-stats {
+    justify-content: center;
+  }
+
+  .videos-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+  }
+
+  .video-card {
+    width: 140px;
+  }
+}
+
+@media (max-width: 400px) {
+  .video-card {
+    width: 120px;
+  }
+
+  .video-caption {
+    font-size: 12px;
+  }
+
+  .btn-follow,
+  .btn-message,
+  .btn-add-user,
+  .btn-share,
+  .btn-more {
+    padding: 8px 14px;
+    font-size: 14px;
+  }
+
+  .username-line .username {
+    font-size: 22px;
+  }
+
+  .username-line .display-name {
+    font-size: 14px;
+  }
+}

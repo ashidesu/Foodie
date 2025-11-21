@@ -1,0 +1,274 @@
+/* Container and scrollbar */
+.profile-page-container {
+  flex: 1;
+  overflow-y: auto;
+  background-color: black;
+  margin-left: 250px; /* Adjust if sidebar width changes */
+  scrollbar-width: none; /* Firefox */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.profile-page-container::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge */
+}
+
+/* Profile header area */
+.profile-header-container {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+/* Profile avatar */
+.profile-avatar-large img,
+.avatar-placeholder-large {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: #222;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  font-weight: bold;
+  color: white;
+  user-select: none;
+}
+
+/* User information next to avatar */
+.user-info {
+  flex-grow: 1;
+}
+
+/* Username and display name */
+.username-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.username-line .username {
+  font-weight: bold;
+  font-size: 24px;
+  margin: 0;
+  color: white;
+  user-select: text;
+}
+
+.username-line .display-name {
+  font-size: 16px;
+  color: #888;
+  user-select: text;
+}
+
+/* Profile action buttons */
+.profile-buttons {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.profile-buttons button {
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 8px 16px;
+  color: white;
+  transition: background-color 0.3s ease;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-edit-profile {
+  background-color: #ff2a68;
+}
+
+.btn-edit-profile:hover {
+  background-color: #e6215c;
+}
+
+.btn-promote-post,
+.btn-settings,
+.btn-share {
+  background-color: #222;
+}
+
+.btn-promote-post:hover,
+.btn-settings:hover,
+.btn-share:hover {
+  background-color: #333;
+}
+
+.profile-buttons .btn-settings,
+.profile-buttons .btn-share {
+  padding: 8px 12px;
+  font-size: 18px;
+}
+
+/* Profile stats line */
+.profile-stats {
+  margin-top: 16px;
+  font-size: 16px;
+  color: #ccc;
+  user-select: text;
+}
+
+.profile-stats span {
+  margin-right: 24px;
+}
+
+.profile-stats strong {
+  color: white;
+}
+
+/* Profile bio */
+.profile-bio {
+  margin-top: 8px;
+  color: #ccc;
+  user-select: text;
+}
+
+/* Tabs navigation */
+.profile-tabs {
+  border-bottom: 1px solid #222;
+  display: flex;
+  gap: 24px;
+  margin-bottom: 20px;
+  font-weight: bold;
+  font-size: 14px;
+  user-select: none;
+}
+
+.tab-item {
+  color: #666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 8px;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-weight: inherit;
+  transition: color 0.3s ease;
+}
+
+.tab-item.active,
+.tab-item:hover {
+  border-bottom: 2px solid white;
+  color: white;
+}
+
+/* Videos container using flex for fixed rectangle thumbnails */
+.videos-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: flex-start;
+  padding-bottom: 20px;
+}
+
+/* Video card fixed width with 9:16 aspect thumbnails */
+.video-card {
+  width: 250px; /* Fixed width */
+  display: flex;
+  flex-direction: column;
+  background-color: #111;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+  transition: filter 0.2s ease;
+  flex-shrink: 0;
+}
+
+.video-card:hover {
+  filter: brightness(1.1);
+}
+
+/* Thumbnail with enforced 9:16 aspect ratio */
+.video-thumbnail {
+  width: 250px;
+  aspect-ratio: 9 / 16;
+  background-position: center;
+  background-size: cover;
+  position: relative;
+  border-radius: 8px 8px 0 0;
+  overflow: hidden;
+}
+
+/* Views and lock icon overlays */
+.video-views {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  background-color: rgba(0, 0, 0, 0.6);
+  border-radius: 12px;
+  padding: 4px 8px;
+  font-size: 14px;
+  color: white;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.video-lock {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background-color: rgba(0,0,0,0.6);
+  border-radius: 50%;
+  padding: 4px 6px;
+  font-size: 16px;
+  color: white;
+  user-select: none;
+}
+
+/* Video caption below thumbnail */
+.video-caption {
+  padding: 8px 12px;
+  font-weight: bold;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 14px;
+  user-select: text;
+  flex-grow: 1;
+}
+
+/* Responsive styling (mobile/tablet) */
+@media (max-width: 600px) {
+  .videos-grid {
+    justify-content: center;
+  }
+
+  .video-card {
+    width: 110px;
+  }
+
+  .video-thumbnail {
+    width: 110px;
+    aspect-ratio: 9 / 16;
+  }
+}
+
+@media (max-width: 350px) {
+  .video-card {
+    width: 100px;
+  }
+
+  .video-thumbnail {
+    width: 100px;
+    aspect-ratio: 9 / 16;
+  }
+}

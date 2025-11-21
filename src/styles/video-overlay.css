@@ -1,0 +1,280 @@
+.video-overlay-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: Arial, sans-serif;
+}
+
+.video-overlay-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    cursor: pointer;
+}
+
+.video-overlay-content {
+    position: relative;
+    display: flex;
+    max-width: 960px;
+    width: 90%;
+    background: #111;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+    color: white;
+    z-index: 10;
+    gap: 24px;
+    padding: 20px;
+}
+
+/* Video Player Section */
+
+.video-player-section {
+    flex: 2;
+    background: black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.overlay-video-player {
+    width: 100%;
+    height: auto;
+    max-height: 560px;
+    outline: none;
+    display: block;
+    border-radius: 12px;
+}
+
+/* Video Interactions Section */
+
+.video-interactions-section {
+    flex: 1;
+    background-color: #222;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    max-height: 560px;
+    box-sizing: border-box;
+}
+
+/* Uploader info */
+
+.video-uploader-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.uploader-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    background-color: #444;
+}
+
+.avatar-placeholder {
+    width: 48px;
+    height: 48px;
+    background-color: #555;
+    border-radius: 50%;
+    font-size: 24px;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+}
+
+.uploader-names {
+    display: flex;
+    flex-direction: column;
+    user-select: text;
+}
+
+.nickname {
+    font-weight: 600;
+    font-size: 18px;
+    color: #fff;
+    line-height: 1.2;
+}
+
+.username {
+    font-size: 14px;
+    color: #aaa;
+    margin-top: 2px;
+}
+
+/* Video stats */
+
+.video-stats {
+    margin-bottom: 20px;
+    font-size: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    user-select: text;
+}
+
+.video-stats > div {
+    color: #ddd;
+    font-weight: 500;
+}
+
+/* Interaction buttons */
+
+.interaction-buttons {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.interaction-buttons button {
+    background: #2a2a2a;
+    border: none;
+    color: white;
+    padding: 10px 16px;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    user-select: none;
+}
+
+.interaction-buttons button:hover {
+    background-color: #ff2a68;
+}
+
+/* Video caption */
+
+.video-caption {
+    font-size: 14px;
+    color: #ccc;
+    margin-bottom: 20px;
+    white-space: pre-wrap;
+    user-select: text;
+}
+
+/* Comments List */
+
+.comments-list {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    border-top: 1px solid #333;
+    padding-top: 10px;
+    max-height: 240px;
+}
+
+/* Individual comment */
+
+.comment-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #222;
+    color: #eee;
+}
+
+.comment-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    background-color: #444;
+}
+
+.comment-content {
+    flex: 1;
+}
+
+.comment-username {
+    font-weight: 700;
+    font-size: 14px;
+    color: #fff;
+    user-select: text;
+}
+
+.comment-text {
+    font-size: 13px;
+    margin-top: 2px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    user-select: text;
+}
+
+/* Overlay close button */
+
+.overlay-close-btn {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 30px;
+    cursor: pointer;
+    font-weight: 700;
+    line-height: 1;
+    user-select: none;
+    transition: color 0.3s ease;
+}
+
+.overlay-close-btn:hover {
+    color: #ff2a68;
+}
+
+/* Scrollbar styling for the comments-list */
+
+.comments-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.comments-list::-webkit-scrollbar-thumb {
+    background-color: #555;
+    border-radius: 4px;
+}
+
+/* Responsive adjustments */
+
+@media (max-width: 800px) {
+    .video-overlay-content {
+      flex-direction: column;
+      max-height: 90vh;
+      max-width: 90vw;
+      padding: 10px;
+      gap: 15px;
+    }
+
+    .video-player-section,
+    .video-interactions-section {
+      max-height: none;
+      width: 100%;
+    }
+
+    .video-interactions-section {
+      max-height: 300px;
+    }
+
+    .overlay-video-player {
+      max-height: 400px;
+    }
+}

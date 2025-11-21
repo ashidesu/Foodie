@@ -1,0 +1,138 @@
+.track-order-overlay-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  z-index: 1600;
+}
+
+.track-order-container {
+  background: #fff;
+  border-radius: 12px;
+  width: 320px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  user-select: none;
+}
+
+.track-order-container.collapsed {
+  height: 45px;
+  cursor: pointer;
+}
+
+.track-order-container.expanded {
+  height: auto;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.track-order-header {
+  background-color: #E91E63;
+  color: white;
+  padding: 0.75rem 1rem;
+  font-weight: 700;
+  font-size: 1.1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.collapse-btn {
+  border: none;
+  background: transparent;
+  font-size: 1.2rem;
+  color: white;
+  cursor: pointer;
+  user-select: none;
+  padding: 2px 8px 0 8px;
+  line-height: 1;
+}
+
+.track-order-content {
+  padding: 1rem;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: #222;
+}
+
+.order-items-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem 0;
+}
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.65rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.order-item-name {
+  flex-grow: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.order-item-quantity {
+  margin: 0 12px;
+  min-width: 24px;
+  text-align: center;
+}
+
+.order-item-subtotal {
+  font-weight: 700;
+  color: #E91E63;
+  min-width: 60px;
+  text-align: right;
+}
+
+.order-total,
+.order-status {
+  font-weight: 700;
+  font-size: 1rem;
+  margin-top: 0.8rem;
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid #eee;
+  padding-top: 0.8rem;
+}
+
+.order-status strong {
+  color: #E91E63;
+}
+
+.movable-track-order {
+  position: fixed;
+  /* or absolute, but fixed is better for movable panels */
+  z-index: 1000;
+  /* High z-index to stay on top */
+  cursor: grab;
+  /* Indicates it's draggable */
+  user-select: none;
+  /* Prevents text selection during drag */
+  pointer-events: auto;
+  /* Ensure events are enabled */
+}
+
+.movable-track-order.collapsed,
+.movable-track-order.expanded {
+  /* Add any specific styles, but avoid pointer-events: none */
+}
+
+.track-order-header {
+  cursor: grab;
+  /* Make the header the drag handle */
+}
+
+.track-order-header:active {
+  cursor: grabbing;
+  /* Change cursor when dragging */
+}

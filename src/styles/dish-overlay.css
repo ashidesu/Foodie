@@ -1,0 +1,156 @@
+/* Overlay backdrop */
+.overlay-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(5px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1500;
+  padding: 1rem;
+  overscroll-behavior: contain;
+}
+
+/* Overlay container */
+.overlay-container {
+  background: #fff;
+  width: 100%;
+  max-width: 420px;
+  max-height: 90vh;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Close button top right */
+.overlay-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 28px;
+  border: none;
+  background: transparent;
+  color: #444;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: color 0.2s ease;
+  user-select: none;
+}
+
+.overlay-close-btn:hover {
+  color: #E91E63;
+}
+
+/* Dish image */
+.overlay-image {
+  width: 100%;
+  height: auto;
+  max-height: 240px;
+  object-fit: cover;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  user-select: none;
+}
+
+/* Dish info text container, scrollable */
+.dish-info-section {
+  padding: 16px 24px 90px; /* bottom padding for footer space */
+  overflow-y: auto;
+  flex-grow: 1;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: #222;
+}
+
+.dish-name {
+  margin: 0 0 8px 0;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #222;
+}
+
+.dish-price {
+  margin: 0 0 12px 0;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: #E91E63;
+}
+
+.dish-description {
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #555;
+  white-space: pre-wrap;
+}
+
+/* Footer fixed at bottom with quantity and add to cart */
+.overlay-footer {
+  position: sticky;
+  bottom: 0;
+  background: #fff;
+  border-top: 1px solid #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  box-shadow: 0 -3px 8px rgba(0, 0, 0, 0.1);
+  user-select: none;
+  z-index: 10;
+}
+
+.quantity-selector {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-weight: 700;
+  color: #222;
+  font-size: 1.25rem;
+}
+
+.qty-btn {
+  background: #eee;
+  border: none;
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: 900;
+  user-select: none;
+  transition: background-color 0.2s ease;
+}
+
+.qty-btn:hover {
+  background-color: #ddd;
+}
+
+.qty-value {
+  min-width: 25px;
+  text-align: center;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Add to cart big pink button */
+.add-to-cart-btn {
+  background-color: #E91E63;
+  color: white;
+  font-size: 1rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 30px;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: background-color 0.3s ease;
+}
+
+.add-to-cart-btn:hover {
+  background-color: #c2185b;
+}
