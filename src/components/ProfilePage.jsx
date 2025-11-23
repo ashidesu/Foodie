@@ -4,7 +4,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { collection, doc, getDoc, query, where, getDocs, orderBy } from 'firebase/firestore';
 import supabase from '../supabase';
 import VideoOverlay from './VideoOverlay';
-import EditProfileOverlay from './EditProfileOverlay'; // NEW: Import the overlay component
+import EditProfileOverlay from './EditProfileOverlay';
 import '../styles/profile-page.css';
 
 const timeAgo = (date) => {
@@ -20,7 +20,7 @@ const timeAgo = (date) => {
 
 const ProfilePage = () => {
   const [user, setUser] = useState(null);
-  const [dbUser, setDbUser] = useState(null);    // Holds Firestore user doc data
+  const [dbUser, setDbUser] = useState(null);
   const [videos, setVideos] = useState([]);
   const [loadingVideos, setLoadingVideos] = useState(true);
   const [selectedVideo, setSelectedVideo] = useState(null);
@@ -28,22 +28,16 @@ const ProfilePage = () => {
   const [followingCount, setFollowingCount] = useState(0);
   const [followersCount, setFollowersCount] = useState(0);
   const [totalLikes, setTotalLikes] = useState(0);
-  const [showEditOverlay, setShowEditOverlay] = useState(false); // NEW: State to control overlay visibility
+  const [showEditOverlay, setShowEditOverlay] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        // Fetch user document from Firestore
         try {
           const userDocRef = doc(db, 'users', currentUser.uid);
           const userDocSnap = await getDoc(userDocRef);
-          if (userDocSnap.exists()) {
-            setDbUser(userDocSnap.data());
-          } else {
-            setDbUser(null);
-            console.warn('No user document found');
-          }
+          setDbUser(userDocSnap.exists() ? userDocSnap.data() : null);
         } catch (error) {
           console.error('Error loading user document:', error);
           setDbUser(null);
@@ -55,7 +49,6 @@ const ProfilePage = () => {
     return () => unsubscribe();
   }, []);
 
-  // Fetch following count
   useEffect(() => {
     if (!user) return;
     const fetchFollowingCount = async () => {
@@ -73,7 +66,6 @@ const ProfilePage = () => {
     fetchFollowingCount();
   }, [user]);
 
-  // Fetch followers count
   useEffect(() => {
     if (!user) return;
     const fetchFollowersCount = async () => {
@@ -94,32 +86,35 @@ const ProfilePage = () => {
   useEffect(() => {
     if (!user) return;
 
-    const fetchUserVideos = async () => {
+    const fetchUserVideosAndLikes = async () => {
+      setLoadingVideos(true);
       try {
+        // 1. Fetch videos uploaded by user
         const videosQuery = query(
           collection(db, 'videos'),
           where('uploaderId', '==', user.uid),
           orderBy('uploadedAt', 'desc')
         );
         const videosSnapshot = await getDocs(videosQuery);
-
         const videosList = [];
+        const videoIds = [];
 
-        for (const doc of videosSnapshot.docs) {
-          const videoData = doc.data();
+        // Fetch users once to get uploader info
+        const usersSnapshot = await getDocs(collection(db, 'users'));
+
+        for (const docSnap of videosSnapshot.docs) {
+          const videoData = docSnap.data();
           const { uploaderId, caption, fileName, uploadedAt, views = 0, locked = false } = videoData;
-          const videoId = doc.id; // Get the doc ID as videoId
+          const videoId = docSnap.id;
+          videoIds.push(videoId);
 
-          // Fetch uploader info from users collection (can optimize if you want)
-          const usersSnapshot = await getDocs(collection(db, 'users'));
           const uploaderDoc = usersSnapshot.docs.find(d => d.id === uploaderId);
           const uploader = uploaderDoc ? uploaderDoc.data() : { displayname: 'Unknown', username: '@unknown', photoURL: null };
 
-          // Get video URL from Supabase
           const { data: { publicUrl } } = supabase.storage.from('videos').getPublicUrl(fileName);
 
           videosList.push({
-            videoId, // Changed: Use videoId instead of id to match VideoOverlay
+            videoId,
             videoSrc: publicUrl,
             caption: caption || 'Untitled Video',
             uploaderName: uploader.displayname || 'Unknown',
@@ -127,50 +122,56 @@ const ProfilePage = () => {
             uploaderProfilePic: uploader.photoURL || null,
             timeUploaded: uploadedAt ? timeAgo(uploadedAt.toDate()) : '',
             views,
-            locked
+            locked,
           });
         }
+
         setVideos(videosList);
 
-        // Fetch total likes from interactions for these videos
-        if (videosList.length > 0) {
-          const videoIds = videosList.map(v => v.videoId);
+        if (videoIds.length === 0) {
+          setTotalLikes(0);
+          setLoadingVideos(false);
+          return;
+        }
+
+        // 2. Fetch total likes from interactions collection filtered by videoIds
+        // Firestore limits 'in' operator to max 10 elements, so chunk if needed
+        const chunkSize = 10;
+        let totalLikesCount = 0;
+
+        for (let i = 0; i < videoIds.length; i += chunkSize) {
+          const chunk = videoIds.slice(i, i + chunkSize);
           const likesQuery = query(
             collection(db, 'interactions'),
             where('type', '==', 'like'),
-            where('videoId', 'in', videoIds)
+            where('videoId', 'in', chunk)
           );
           const likesSnapshot = await getDocs(likesQuery);
-          setTotalLikes(likesSnapshot.size);
-        } else {
-          setTotalLikes(0);
+          totalLikesCount += likesSnapshot.size;
         }
+
+        setTotalLikes(totalLikesCount);
+        
       } catch (error) {
-        console.error('Error fetching user videos:', error);
+        console.error('Error fetching user videos or likes:', error);
       } finally {
         setLoadingVideos(false);
       }
     };
 
-    fetchUserVideos();
+    fetchUserVideosAndLikes();
   }, [user]);
 
-  // NEW: Callback to update dbUser after editing (avoids full refetch)
   const handleProfileUpdate = (updatedData) => {
-    setDbUser((prev) => ({ ...prev, ...updatedData }));
+    setDbUser(prev => ({ ...prev, ...updatedData }));
   };
 
-  if (!user) {
-    return <div className="profile-page-container">Please log in to see your profile.</div>;
-  }
+  if (!user) return <div className="profile-page-container">Please log in to see your profile.</div>;
 
-  // Use dbUser info if available, else fallback to auth user displayname/email/uid
   const displayname = dbUser?.displayname || user.displayname || 'Anonymous User';
   const usernameTag = dbUser?.username || (user.displayname ? user.displayname.toLowerCase().replace(/\s+/g, '') : 'anonymous');
 
-  // Open overlay on video click
   const handleVideoClick = (video) => setSelectedVideo(video);
-  // Close video overlay
   const closeOverlay = () => setSelectedVideo(null);
 
   return (
@@ -180,9 +181,7 @@ const ProfilePage = () => {
           {(dbUser?.photoURL || user.photoURL) ? (
             <img alt="Profile" src={dbUser?.photoURL || user.photoURL} />
           ) : (
-            <div className="avatar-placeholder-large">
-              {displayname.charAt(0).toUpperCase()}
-            </div>
+            <div className="avatar-placeholder-large">{displayname.charAt(0).toUpperCase()}</div>
           )}
         </div>
 
@@ -193,7 +192,7 @@ const ProfilePage = () => {
           </div>
 
           <div className="profile-buttons">
-            <button className="btn-edit-profile" onClick={() => setShowEditOverlay(true)}>Edit profile</button> {/* MODIFIED: Opens the edit overlay */}
+            <button className="btn-edit-profile" onClick={() => setShowEditOverlay(true)}>Edit profile</button>
             <button className="btn-promote-post">Promote post</button>
             <button className="btn-settings" aria-label="Settings">⚙️</button>
             <button className="btn-share" aria-label="Share">↗️</button>
@@ -235,7 +234,7 @@ const ProfilePage = () => {
           ) : (
             videos.map(video => (
               <div
-                key={video.videoId} // Changed: Use videoId as key
+                key={video.videoId}
                 className="video-card"
                 title={video.caption}
                 onClick={() => handleVideoClick(video)}
@@ -244,10 +243,9 @@ const ProfilePage = () => {
                   className="video-thumbnail"
                   style={{ backgroundImage: `url(${video.videoSrc})` }}
                 >
-                  <div className="video-views">▶ {video.views}</div>
+                  <div className="video-views">▶ {video.views || 0}</div>
                   {video.locked && <div className="video-lock">🔒</div>}
                 </div>
-
                 <div className="video-caption">{video.caption}</div>
               </div>
             ))
@@ -255,10 +253,8 @@ const ProfilePage = () => {
         </section>
       )}
 
-      {/* Video Overlay */}
       {selectedVideo && <VideoOverlay video={selectedVideo} onClose={closeOverlay} />}
 
-      {/* NEW: Edit Profile Overlay */}
       {showEditOverlay && (
         <EditProfileOverlay
           user={user}

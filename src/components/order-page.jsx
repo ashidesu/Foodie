@@ -4,6 +4,41 @@ import { db } from '../firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 
+const daysOfWeek = [
+  'sunday',
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+];
+
+// Helper: Check if restaurant is currently open based on openHours
+const isRestaurantOpen = (openHours) => {
+  if (!openHours) return false;
+
+  const now = new Date();
+  const dayName = daysOfWeek[now.getDay()]; // Sunday = 0
+
+  if (!openHours[dayName]?.enabled) return false;
+
+  const openTimeStr = openHours[dayName].open || '09:00';
+  const closeTimeStr = openHours[dayName].close || '17:30';
+
+  // Parse hours and minutes
+  const [openHour, openMinute] = openTimeStr.split(':').map(Number);
+  const [closeHour, closeMinute] = closeTimeStr.split(':').map(Number);
+
+  // Create Date objects for open and close today
+  const openDate = new Date(now);
+  openDate.setHours(openHour, openMinute, 0, 0);
+  const closeDate = new Date(now);
+  closeDate.setHours(closeHour, closeMinute, 0, 0);
+
+  return now >= openDate && now <= closeDate;
+};
+
 const OrderPage = () => {
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,7 +66,6 @@ const OrderPage = () => {
   }, []);
 
   const handleRestaurantClick = (restaurantId) => {
-    // Navigate to menu page for selected restaurant
     navigate(`/restaurant/${restaurantId}`);
   };
 
@@ -41,7 +75,7 @@ const OrderPage = () => {
   return (
     <div className="order-page">
       <div className="order-container">
-        {/* ...Other sections remain unchanged... */}
+        {/* Other sections remain unchanged */}
 
         {/* All Restaurants */}
         <div className="section restaurants-section">
@@ -50,22 +84,46 @@ const OrderPage = () => {
             {restaurants.length === 0 ? (
               <p>No restaurants found.</p>
             ) : (
-              restaurants.map((restaurant) => (
-                <div
-                  key={restaurant.id}
-                  className="restaurant-card"
-                  onClick={() => handleRestaurantClick(restaurant.id)}
-                  style={{ cursor: 'pointer' }}
-                  tabIndex={0}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') handleRestaurantClick(restaurant.id);
-                  }}
-                  role="button"
-                  aria-label={`Open restaurant ${restaurant.name}`}
-                >
-                  <h4>{restaurant.name}</h4>
-                </div>
-              ))
+              restaurants.map((restaurant) => {
+                const open = isRestaurantOpen(restaurant.openHours);
+
+                return (
+                  <div
+                    key={restaurant.id}
+                    className="restaurant-card"
+                    onClick={() => handleRestaurantClick(restaurant.id)}
+                    style={{ cursor: 'pointer' }}
+                    tabIndex={0}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') handleRestaurantClick(restaurant.id);
+                    }}
+                    role="button"
+                    aria-label={`Open restaurant ${restaurant.name}`}
+                  >
+                    {/* Restaurant Photo */}
+                    {restaurant.photoUrl ? (
+                      <img
+                        src={restaurant.photoUrl}
+                        alt={`${restaurant.name} photo`}
+                        className="restaurant-photo"
+                      />
+                    ) : (
+                      <div className="restaurant-photo placeholder">
+                        No Image
+                      </div>
+                    )}
+
+                    {/* Name and Open Status */}
+                    <div className="restaurant-info">
+                      <h4 className="restaurant-name">{restaurant.name}</h4>
+                      <div className={`restaurant-status ${open ? 'open' : 'closed'}`}>
+                        {open ? 'Open Now' : 'Closed'}
+                        <span className={`status-indicator ${open ? 'green' : 'red'}`} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
             )}
           </div>
         </div>

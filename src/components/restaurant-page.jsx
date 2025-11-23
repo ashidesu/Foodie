@@ -3,6 +3,7 @@ import '../styles/restaurants.css';
 import '../styles/dish-overlay.css';
 import '../styles/cart.css';
 import '../styles/track-order.css';
+import '../styles/payment-review.css'; // Add this for the new component
 import { useParams } from 'react-router-dom';
 import { getAuth } from 'firebase/auth';
 import { db } from '../firebase';
@@ -11,7 +12,8 @@ import supabase from '../supabase';
 
 import DishOverlay from './dish-overlay';
 import MovableCart from './cart';
-import MovableTrackOrder from './movable-track-order'; // Updated import to match the component name
+import MovableTrackOrder from './movable-track-order';
+import MovablePaymentReview from './movable-payment-review'; // New import
 
 const truncateText = (text, maxLength) => {
   if (!text) return '';
@@ -29,6 +31,7 @@ const RestaurantPage = () => {
   const [overlayDishId, setOverlayDishId] = useState(null);
   const [cart, setCart] = useState([]);
   const [currentOrder, setCurrentOrder] = useState(null);
+  const [showPaymentReview, setShowPaymentReview] = useState(false); // New state for payment review
 
   useEffect(() => {
     const fetchDishes = async () => {
@@ -147,7 +150,15 @@ const RestaurantPage = () => {
     setCart([]);
   };
 
-  const handleSubmitOrder = async (cartItems, totalPrice) => {
+  const handleReviewPayment = () => {
+    setShowPaymentReview(true);
+  };
+
+  const handleCancelPaymentReview = () => {
+    setShowPaymentReview(false);
+  };
+
+  const handleSubmitOrder = async (cartItems, totalPrice, paymentMethod) => {
     const auth = getAuth();
     const user = auth.currentUser;
 
@@ -165,8 +176,9 @@ const RestaurantPage = () => {
         price,
       })),
       totalPrice,
+      paymentMethod, // Add payment method
       status: 'pending',
-      active: true, // Set active to true for new orders
+      active: true,
       createdAt: Timestamp.now(),
       restaurantId,
     };
@@ -174,7 +186,8 @@ const RestaurantPage = () => {
     try {
       const docRef = await addDoc(collection(db, 'orders'), orderPayload);
       setCurrentOrder({ ...orderPayload, id: docRef.id });
-      setCart([]); // clear cart once order placed
+      setCart([]);
+      setShowPaymentReview(false); // Close review after submission
     } catch (error) {
       console.error('Failed to create order:', error);
       alert('Failed to submit order. Please try again.');
@@ -329,8 +342,19 @@ const RestaurantPage = () => {
         cart={cart}
         onRemove={handleRemoveFromCart}
         onCancel={handleCancelOrder}
-        onAddOrder={() => handleSubmitOrder(cart, totalCartPrice)}
+        onAddOrder={handleReviewPayment} // Changed to open payment review
       />
+
+      {/* Movable Payment Review Panel */}
+      {showPaymentReview && (
+        <MovablePaymentReview
+          cart={cart}
+          cartTotal={totalCartPrice}
+          deliveryFee={50} // Fixed delivery fee; adjust as needed
+          onConfirm={handleSubmitOrder}
+          onCancel={handleCancelPaymentReview}
+        />
+      )}
 
       {/* Movable Track Order Panel */}
       {currentOrder && (

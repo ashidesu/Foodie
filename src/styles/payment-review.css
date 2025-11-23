@@ -1,0 +1,97 @@
+.movable-payment-review {
+  position: fixed;
+  width: 320px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  font-family: Arial, sans-serif;
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background: #f0f0f0;
+  cursor: grab;
+  border-bottom: 1px solid #ccc;
+}
+
+.review-header:active {
+  cursor: grabbing;
+}
+
+.collapse-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.review-content {
+  padding: 15px;
+}
+
+.review-items-list {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 15px;
+}
+
+.review-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.review-totals {
+  margin-bottom: 15px;
+}
+
+.subtotal, .delivery-fee, .grand-total {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.grand-total {
+  font-weight: bold;
+  border-top: 1px solid #ccc;
+  padding-top: 5px;
+}
+
+.payment-options {
+  margin-bottom: 15px;
+}
+
+.payment-options label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.review-actions {
+  display: flex;
+  justify-content: space-between;
+}
+
+.cancel-review-btn, .confirm-order-btn {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.cancel-review-btn {
+  background: #ccc;
+}
+
+.confirm-order-btn {
+  background: #28a745;
+  color: white;
+}
+
+.collapsed .review-content {
+  display: none;
+}

@@ -130,7 +130,7 @@ const MovableCart = ({ cart, onRemove, onCancel, onAddOrder }) => {
               onClick={() => onAddOrder(cart, cartTotal)}
               aria-label="Add order"
             >
-              Add to Cart
+              Review Payment Method
             </button>
           </div>
         </div>
