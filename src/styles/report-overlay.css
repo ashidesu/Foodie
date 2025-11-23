@@ -1,0 +1,113 @@
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.8); /* Darker overlay */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.overlay-content {
+    background-color: #1a1a1a; /* Dark background */
+    padding: 20px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.overlay-header {
+    background-color: #1a1a1a; /* Dark background */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.overlay-header h2 {
+    margin: 0;
+    color: #ffffff; /* White heading */
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #ffffff; /* White close button */
+}
+
+.report-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 15px 0;
+}
+
+.report-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #e0e0e0; /* Light text for dark mode */
+}
+
+.additional-details {
+    margin: 15px 0;
+    color: #e0e0e0; /* Light text for dark mode */
+}
+
+.additional-details textarea {
+    width: 100%;
+    padding: 12px 16px; /* Updated padding to match auth.css inputs */
+    border: none; /* Removed border to match auth.css inputs */
+    border-radius: 4px;
+    resize: vertical;
+    margin-top: 5px;
+    background-color: #2a2a2a; /* Dark input background for dark mode */
+    color: #ffffff; /* White text for dark mode */
+    font-size: 15px; /* Added to match auth.css inputs */
+    outline: none; /* Added to match auth.css inputs */
+}
+
+.additional-details textarea::placeholder {
+    color: #666666; /* Placeholder color for dark mode */
+}
+
+.report-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.report-actions button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: #2a2a2a; /* Dark button background for dark mode */
+    color: #ffffff; /* White text for dark mode */
+    font-size: 14px; /* Added to match auth.css buttons */
+    font-weight: 600; /* Added to match auth.css buttons */
+    transition: background-color 0.3s ease; /* Added transition to match auth.css */
+}
+
+.report-actions button:hover:not([type="submit"]) {
+    background-color: #353535; /* Hover state for dark mode */
+}
+
+.report-actions button[type="submit"] {
+    background-color: #dc3545; /* Primary color for submit */
+    color: #ffffff;
+}
+
+.report-actions button[type="submit"]:disabled {
+    background-color: #666666; /* Disabled state for dark mode */
+    cursor: not-allowed;
+}

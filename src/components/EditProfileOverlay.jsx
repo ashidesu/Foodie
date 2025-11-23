@@ -67,8 +67,9 @@ const EditProfileOverlay = ({ user, dbUser, onClose, onUpdate }) => {
   };
 
   const handleSave = async () => {
-    if (!user) {
+    if (!user || !user.uid) {
       alert('You must be logged in');
+      console.error('User or user.uid is undefined:', user);
       return;
     }
 
@@ -76,18 +77,45 @@ const EditProfileOverlay = ({ user, dbUser, onClose, onUpdate }) => {
     try {
       let photoURL = dbUser?.photoURL || null;
 
-      // Upload new profile picture if selected
+      // If a new file is selected, delete the existing photo first (if it exists), then upload the new one
       if (selectedFile) {
+        // Delete the existing profile picture if it exists
+        if (dbUser?.photoURL) {
+          const url = new URL(dbUser.photoURL);
+          const pathParts = url.pathname.split('/');
+          const oldFilename = pathParts[pathParts.length - 1];
+          console.log('Attempting to delete old file:', oldFilename);
+          if (oldFilename) {
+            const { error: deleteError } = await supabase.storage
+              .from('profile-pictures')
+              .remove([oldFilename]);
+            if (deleteError) {
+              console.error('Error deleting old profile picture:', deleteError);
+              // Continue anyway, as the new upload will proceed
+            } else {
+              console.log('Old file deleted successfully');
+            }
+          }
+        }
+
+        // Upload the new profile picture with upsert to force replacement
         const fileExt = selectedFile.name.split('.').pop();
-        const fileName = `${user.uid}.${fileExt}`; // Updated: Use only the logged-in user ID as the filename
+        const fileName = `${user.uid}.${fileExt}`;
+        console.log('User UID:', user.uid);
+        console.log('Uploading new file:', fileName);
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('profile-pictures')
-          .upload(fileName, selectedFile);
+          .upload(fileName, selectedFile, { upsert: true });
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error('Error uploading new profile picture:', uploadError);
+          throw uploadError;
+        }
 
+        console.log('New file uploaded successfully');
         const { data: { publicUrl } } = supabase.storage.from('profile-pictures').getPublicUrl(fileName);
         photoURL = publicUrl;
+        console.log('New photoURL:', photoURL);
       }
 
       // Update Firestore document

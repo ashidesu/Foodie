@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { db, auth } from '../firebase';
+import { db } from '../firebase';
 import { collection, query, orderBy, limit, getDocs, where } from 'firebase/firestore';
 import supabase from '../supabase';
-import VideoOverlay from './VideoOverlay'; // Assuming VideoOverlay is in the same directory
+import VideoOverlay from './VideoOverlay';
 import '../styles/discover-page.css';
 
 const timeAgo = (date) => {
@@ -17,8 +17,47 @@ const timeAgo = (date) => {
   return `${diffInDays} days ago`;
 };
 
+/**
+ * Generate a thumbnail image URL from a video URL (first frame)
+ * @param {string} videoUrl - URL of the video
+ * @returns {Promise<string>} - a Promise that resolves to a data URL image as thumbnail
+ */
+const generateThumbnail = (videoUrl) => {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    video.crossOrigin = 'anonymous'; // Enable cross origin for public URLs
+    video.preload = 'metadata';
+    video.src = videoUrl;
+
+    // When metadata is loaded, seek to 0 seconds
+    video.onloadedmetadata = () => {
+      video.currentTime = 0;
+    };
+
+    // When seeked to first frame, draw to canvas and export as data URL
+    video.onseeked = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imgUrl = canvas.toDataURL('image/jpeg');
+        resolve(imgUrl);
+      } catch (err) {
+        reject(err);
+      }
+    };
+
+    video.onerror = (err) => {
+      reject(new Error('Error loading video for thumbnail generation: ' + err.message));
+    };
+  });
+};
+
 const DiscoverPage = () => {
   const [videos, setVideos] = useState([]);
+  const [videoThumbnails, setVideoThumbnails] = useState({});
   const [loadingVideos, setLoadingVideos] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState({ users: [], videos: [] });
@@ -26,13 +65,12 @@ const DiscoverPage = () => {
   const [selectedVideo, setSelectedVideo] = useState(null);
   const navigate = useNavigate();
 
-  // Fetch random videos on component mount (limit to 20 for performance)
   useEffect(() => {
     const fetchRandomVideos = async () => {
       try {
         const videosQuery = query(
           collection(db, 'videos'),
-          orderBy('uploadedAt', 'desc'), // Order by recent; for true randomness, consider shuffling client-side or using a random field
+          orderBy('uploadedAt', 'desc'),
           limit(20)
         );
         const videosSnapshot = await getDocs(videosQuery);
@@ -43,7 +81,6 @@ const DiscoverPage = () => {
           const { caption, fileName, uploadedAt, views = 0, locked = false, uploaderId } = videoData;
           const videoId = doc.id;
 
-          // Fetch uploader details
           const uploaderDoc = await getDocs(query(collection(db, 'users'), where('__name__', '==', uploaderId)));
           const uploaderData = uploaderDoc.docs[0]?.data() || {};
 
@@ -62,6 +99,20 @@ const DiscoverPage = () => {
           });
         }
         setVideos(videosList);
+
+        // Generate thumbnails for each video
+        const thumbnails = {};
+        await Promise.all(videosList.map(async (vid) => {
+          try {
+            const thumbnail = await generateThumbnail(vid.videoSrc);
+            thumbnails[vid.videoId] = thumbnail;
+          } catch (err) {
+            console.error('Thumbnail error for video:', vid.videoId, err);
+            thumbnails[vid.videoId] = null;
+          }
+        }));
+        setVideoThumbnails(thumbnails);
+
       } catch (error) {
         console.error('Error fetching videos:', error);
       } finally {
@@ -71,9 +122,8 @@ const DiscoverPage = () => {
     fetchRandomVideos();
   }, []);
 
-  // Handle search input change
   const handleSearchChange = async (e) => {
-    const searchTerm = e.target.value;  // Renamed to avoid shadowing the imported 'query' function
+    const searchTerm = e.target.value;
     setSearchQuery(searchTerm);
 
     if (searchTerm.trim() === '') {
@@ -83,7 +133,6 @@ const DiscoverPage = () => {
 
     setLoadingSearch(true);
     try {
-      // Fetch up to 100 videos for client-side filtering (adjust limit as needed for performance)
       const videosQuery = query(collection(db, 'videos'), orderBy('uploadedAt', 'desc'), limit(100));
       const videosSnapshot = await getDocs(videosQuery);
       const allVideos = videosSnapshot.docs.map(doc => ({
@@ -92,13 +141,11 @@ const DiscoverPage = () => {
         captionLower: (doc.data().caption || '').toLowerCase(),
       }));
 
-      // Filter videos client-side for partial match (case-insensitive)
       const matchingVideoIds = allVideos
         .filter(video => video.captionLower.includes(searchTerm.toLowerCase()))
-        .slice(0, 10)  // Limit to 10 results
+        .slice(0, 10)
         .map(video => video.id);
 
-      // Fetch full details for matching video IDs
       const searchedVideos = [];
       if (matchingVideoIds.length > 0) {
         const fullVideosQuery = query(collection(db, 'videos'), where('__name__', 'in', matchingVideoIds));
@@ -128,30 +175,47 @@ const DiscoverPage = () => {
         }
       }
 
-      // Fetch up to 100 users for client-side filtering (adjust limit as needed for performance)
+      // Generate thumbnails for searched videos
+      const thumbnails = {};
+      await Promise.all(searchedVideos.map(async (vid) => {
+        try {
+          const thumbnail = await generateThumbnail(vid.videoSrc);
+          thumbnails[vid.videoId] = thumbnail;
+        } catch (err) {
+          console.error('Thumbnail error for video:', vid.videoId, err);
+          thumbnails[vid.videoId] = null;
+        }
+      }));
+
       const usersQuery = query(collection(db, 'users'), orderBy('displayName'), limit(100));
       const usersSnapshot = await getDocs(usersQuery);
       const allUsers = usersSnapshot.docs.map(doc => ({
         id: doc.id,
         displayName: doc.data().displayName || '',
         displayNameLower: (doc.data().displayName || '').toLowerCase(),
+        username: doc.data().username || '',
+        photoURL: doc.data().photoURL || null,
       }));
 
-      // Filter users client-side for partial match (case-insensitive)
       const matchingUserIds = allUsers
         .filter(user => user.displayNameLower.includes(searchTerm.toLowerCase()))
-        .slice(0, 10)  // Limit to 10 results
+        .slice(0, 10)
         .map(user => user.id);
 
-      // Fetch full details for matching user IDs
       const searchedUsers = [];
       if (matchingUserIds.length > 0) {
         const fullUsersQuery = query(collection(db, 'users'), where('__name__', 'in', matchingUserIds));
         const fullUsersSnapshot = await getDocs(fullUsersQuery);
-        searchedUsers.push(...fullUsersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        searchedUsers.push(...fullUsersSnapshot.docs.map(doc => ({
+          id: doc.id,
+          displayName: doc.data().displayName || '',
+          username: doc.data().username || '',
+          photoURL: doc.data().photoURL || null,
+        })));
       }
 
       setSearchResults({ users: searchedUsers, videos: searchedVideos });
+      setVideoThumbnails(thumbnails);
     } catch (error) {
       console.error('Error searching:', error);
     } finally {
@@ -189,7 +253,11 @@ const DiscoverPage = () => {
                   <h2>Users</h2>
                   <ul className="users-list">
                     {searchResults.users.map(user => (
-                      <li key={user.id} className="user-item" onClick={() => handleUserClick(user.id)}>
+                      <li
+                        key={user.id}
+                        className="user-item"
+                        onClick={() => handleUserClick(user.id)}
+                      >
                         <div className="user-avatar">
                           {user.photoURL ? (
                             <img src={user.photoURL} alt={user.displayName} />
@@ -197,9 +265,9 @@ const DiscoverPage = () => {
                             <div className="avatar-placeholder">{user.displayName?.charAt(0).toUpperCase()}</div>
                           )}
                         </div>
-                        <div className="user-info">
-                          <span className="user-name">{user.displayName || 'Unknown'}</span>
-                          <span className="user-username">@{user.username || 'unknown'}</span>
+                        <div className="user-text">
+                          <span className="username">{user.displayName || 'Unknown'}</span>
+                          <span className="handle">@{user.username || 'unknown'}</span>
                         </div>
                       </li>
                     ))}
@@ -218,9 +286,9 @@ const DiscoverPage = () => {
                       >
                         <div
                           className="video-thumbnail"
-                          style={{ backgroundImage: `url(${video.videoSrc})` }}
+                          style={{ backgroundImage: videoThumbnails[video.videoId] ? `url(${videoThumbnails[video.videoId]})` : `url(${video.videoSrc})` }}
                         >
-                          <div className="video-views">▶ {video.views}</div>
+                          <div className="video-views">{video.views}</div>
                           {video.locked && <div className="video-lock">🔒</div>}
                         </div>
                         <div className="video-info">
@@ -240,7 +308,7 @@ const DiscoverPage = () => {
         </div>
       )}
 
-      {/* Main Videos Grid (shown when not searching) */}
+      {/* Main Videos Grid (when not searching) */}
       {!searchQuery && (
         <div className="videos-grid">
           {loadingVideos ? (
@@ -256,9 +324,9 @@ const DiscoverPage = () => {
               >
                 <div
                   className="video-thumbnail"
-                  style={{ backgroundImage: `url(${video.videoSrc})` }}
+                  style={{ backgroundImage: videoThumbnails[video.videoId] ? `url(${videoThumbnails[video.videoId]})` : `url(${video.videoSrc})` }}
                 >
-                  <div className="video-views">▶ {video.views}</div>
+                  <div className="video-views">{video.views}</div>
                   {video.locked && <div className="video-lock">🔒</div>}
                 </div>
                 <div className="video-info">
@@ -276,26 +344,6 @@ const DiscoverPage = () => {
                     </div>
                   </div>
                   <p className="video-title">{video.caption}</p>
-                  <div className="video-stats">
-                    <div className="stat">
-                      <svg viewBox="0 0 24 24" width="16" height="16">
-                        <path fill="currentColor" d="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3zm-4.4 15.55l-.1.1-.1-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36h1.87C13.46 5.99 14.96 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.89-3.14 5.74-7.9 10.05z"></path>
-                      </svg>
-                      <span>{video.likes || 0}</span> {/* Assuming likes are fetched separately if needed */}
-                    </div>
-                    <div className="stat">
-                      <svg viewBox="0 0 24 24" width="16" height="16">
-                        <path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"></path>
-                      </svg>
-                      <span>{video.comments || 0}</span> {/* Assuming comments are fetched separately if needed */}
-                    </div>
-                    <div className="stat">
-                      <svg viewBox="0 0 24 24" width="16" height="16">
-                        <path fill="currentColor" d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"></path>
-                      </svg>
-                      <span>{video.shares || 0}</span> {/* Assuming shares are fetched separately if needed */}
-                    </div>
-                  </div>
                 </div>
               </div>
             ))

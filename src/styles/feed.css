@@ -1,13 +1,17 @@
-/* feed.css */
+/* feed.css - Modified to use dark color scheme */
+
 .main-content {
     margin-left: 250px;
     height: 100vh;
-    width: 100%;
+    width: calc(100% - 350px);
     overflow-y: scroll;
     scroll-snap-type: y mandatory;
-    background-color: #ffffff;
+    background-color: #121212; /* Dark background */
     overflow-y: auto;
     padding: 0;
+    color: #e0e0e0; /* Light text color */
+    flex:1;
+    scrollbar-width: none;
 }
 
 .videoBox {
@@ -32,7 +36,8 @@
     height: 85vh;
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); /* Darker shadow for dark theme */
+    background-color: #1a1a1a; /* Dark background for video border */
 }
 
 .videoBorder video {
@@ -47,8 +52,8 @@
     position: absolute;
     bottom: 20px;
     left: 15px;
-    color: white;
-    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+    color: #ffffff; /* White text */
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8); /* Keep shadow for readability */
     z-index: 10;
 }
 
@@ -56,6 +61,7 @@
     font-weight: bold;
     margin: 0;
     font-size: 18px;
+    color: #ffffff;
 }
 
 .uploaderUsername,
@@ -63,6 +69,7 @@
     margin: 4px 0;
     font-size: 14px;
     opacity: 0.9;
+    color: #cccccc; /* Light gray for secondary text */
 }
 
 .playPauseOverlay {
@@ -74,7 +81,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: rgba(0, 0, 0, 0.4); /* Slightly darker overlay */
     opacity: 0;
     transition: opacity 0.3s ease;
     cursor: pointer;
@@ -98,7 +105,7 @@
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 25px;
+    gap: 15px;
 }
 
 .sideBar li {
@@ -113,9 +120,12 @@
 }
 
 .sideBar svg {
-    width: 24px;
-    height: 24px;
-    color: white;
+    background-color: rgba(128, 128, 128, 0.2);
+    border-radius: 50%;
+    padding: 8px;
+    width: 45px;
+    height: 45px;
+    color: #ffffff; /* White icons */
     filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.7));
 }
 
@@ -127,39 +137,22 @@
 }
 
 .iconContainer span {
-    color: white;
+    color: #ffffff; /* White text */
     font-size: 12px;
     font-weight: 500;
     text-shadow: 0 0 2px rgba(0, 0, 0, 0.7);
 }
 
-/* Custom scrollbar for main content */
-.main-content::-webkit-scrollbar {
-    width: 6px;
-}
-
-.main-content::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.main-content::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 3px;
-}
-
-.main-content::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.5);
-}
 .profile-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  object-fit: cover; /* Ensures the image fits nicely */
-}
-  .profile-pic-icon {
-    width: 24px; /* Adjust size */
-    height: 24px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
     object-fit: cover;
-  }
-  
+}
+
+.profile-pic-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    object-fit: cover;
+}

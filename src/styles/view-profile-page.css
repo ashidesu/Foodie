@@ -2,7 +2,7 @@
 .profile-page-container {
   flex: 1;
   overflow-y: auto;
-  background-color: black;
+  background-color: #121212;
   margin-left: 250px; /* Adjust if sidebar width changes */
   scrollbar-width: none; /* Firefox */
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;

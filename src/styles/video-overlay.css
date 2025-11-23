@@ -66,18 +66,17 @@
     padding: 20px;
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
-    max-height: 560px;
+    height: 560px; /* Fixed height to keep top elements sticky */
     box-sizing: border-box;
 }
 
-/* Uploader info */
+/* Uploader info row */
 
-.video-uploader-info {
+.uploader-info-row {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: 24px;
+    margin-bottom: 16px;
 }
 
 .uploader-avatar {
@@ -102,10 +101,9 @@
     user-select: none;
 }
 
-.uploader-names {
+.uploader-details {
     display: flex;
     flex-direction: column;
-    user-select: text;
 }
 
 .nickname {
@@ -115,51 +113,10 @@
     line-height: 1.2;
 }
 
-.username {
+.upload-date {
     font-size: 14px;
     color: #aaa;
     margin-top: 2px;
-}
-
-/* Video stats */
-
-.video-stats {
-    margin-bottom: 20px;
-    font-size: 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    user-select: text;
-}
-
-.video-stats > div {
-    color: #ddd;
-    font-weight: 500;
-}
-
-/* Interaction buttons */
-
-.interaction-buttons {
-    margin-bottom: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.interaction-buttons button {
-    background: #2a2a2a;
-    border: none;
-    color: white;
-    padding: 10px 16px;
-    font-size: 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    user-select: none;
-}
-
-.interaction-buttons button:hover {
-    background-color: #ff2a68;
 }
 
 /* Video caption */
@@ -167,19 +124,50 @@
 .video-caption {
     font-size: 14px;
     color: #ccc;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
     white-space: pre-wrap;
     user-select: text;
 }
 
-/* Comments List */
+/* Interaction buttons */
+
+.interaction-buttons {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.interaction-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    transition: color 0.3s ease;
+    user-select: none;
+}
+
+.interaction-btn:hover {
+    color: #ff2a68;
+}
+
+/* Comments section */
+
+.comments-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Prevent overflow, let comments-list handle scrolling */
+}
 
 .comments-list {
-    flex: 1 1 auto;
+    flex: 1;
     overflow-y: auto;
-    border-top: 1px solid #333;
-    padding-top: 10px;
-    max-height: 240px;
+    padding-bottom: 10px;
 }
 
 /* Individual comment */
@@ -221,6 +209,45 @@
     user-select: text;
 }
 
+/* New comment input */
+
+.new-comment {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #333;
+}
+
+.new-comment input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #555;
+    border-radius: 6px;
+    background: #333;
+    color: white;
+    font-size: 14px;
+}
+
+.new-comment input::placeholder {
+    color: #aaa;
+}
+
+.new-comment button {
+    padding: 8px 16px;
+    background: #ff2a68;
+    border: none;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+}
+
+.new-comment button:hover {
+    background: #e0245e;
+}
+
 /* Overlay close button */
 
 .overlay-close-btn {
@@ -257,24 +284,30 @@
 
 @media (max-width: 800px) {
     .video-overlay-content {
-      flex-direction: column;
-      max-height: 90vh;
-      max-width: 90vw;
-      padding: 10px;
-      gap: 15px;
+        flex-direction: column;
+        max-height: 90vh;
+        max-width: 90vw;
+        padding: 10px;
+        gap: 15px;
     }
 
     .video-player-section,
     .video-interactions-section {
-      max-height: none;
-      width: 100%;
+        max-height: none;
+        width: 100%;
     }
 
     .video-interactions-section {
-      max-height: 300px;
+        height: 400px; /* Adjust for mobile */
     }
 
     .overlay-video-player {
-      max-height: 400px;
+        max-height: 400px;
     }
+}
+.upload-date {
+  font-size: 14px;
+  color: #aaa;
+  margin-top: 2px;
+  user-select: text;
 }

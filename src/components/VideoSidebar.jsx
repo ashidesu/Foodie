@@ -5,6 +5,7 @@ import { collection, getDocs, query, where, addDoc, deleteDoc, doc, getDoc } fro
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import CommentOverlay from './CommentOverlay';
+import ReportOverlay from './report-overlay'; // NEW: Import the separated ReportOverlay component
 
 // SVG Icon Components (unchanged)
 const ProfileIcon = () => (
@@ -31,14 +32,22 @@ const ShareIcon = () => (
   </svg>
 );
 
+// NEW: Report Icon
+const ReportIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-6">
+    <path fillRule="evenodd" d="M3 2.25a.75.75 0 0 1 .75.75v.54l1.838-.46a9.75 9.75 0 0 1 6.725.738l.108.054a8.25 8.25 0 0 0 5.58.652l3.109-.732a.75.75 0 0 1 .917.81 47.784 47.784 0 0 0 .005 10.337.75.75 0 0 1-.916.81l-3.109-.732a8.25 8.25 0 0 0-5.59.653l-.108.054a9.75 9.75 0 0 1-6.726.738l-1.838-.46V21a.75.75 0 0 1-1.5 0V3A.75.75 0 0 1 3 2.25Zm14.5 5a.75.75 0 0 0-1.5 0v7.5a.75.75 0 0 0 1.5 0v-7.5Zm-6 3a.75.75 0 0 0-1.5 0v4.5a.75.75 0 0 0 1.5 0v-4.5Zm-4.5 3a.75.75 0 0 0-1.5 0v1.5a.75.75 0 0 0 1.5 0v-1.5Z" clipRule="evenodd" />
+  </svg>
+);
+
 const VideoSidebar = ({ videoId }) => {
   const [likesCount, setLikesCount] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
   const [commentsCount, setCommentsCount] = useState(0);
   const [isCommentOverlayOpen, setIsCommentOverlayOpen] = useState(false);
+  const [isReportOverlayOpen, setIsReportOverlayOpen] = useState(false); // NEW: State for report overlay
   const [currentUser, setCurrentUser] = useState(null);
   const [uploaderId, setUploaderId] = useState(null);
-  const [uploaderDbUser, setUploaderDbUser] = useState(null); // NEW: State for uploader's Firestore data
+  const [uploaderDbUser, setUploaderDbUser] = useState(null);
 
   const auth = getAuth();
   const navigate = useNavigate();
@@ -60,7 +69,7 @@ const VideoSidebar = ({ videoId }) => {
       return;
     }
 
-    console.log('Fetching uploaderId for videoId:', videoId); // Debug log
+    console.log('Fetching uploaderId for videoId:', videoId);
 
     const fetchUploaderData = async () => {
       try {
@@ -68,11 +77,10 @@ const VideoSidebar = ({ videoId }) => {
         const videoDocSnap = await getDoc(videoDocRef);
         if (videoDocSnap.exists()) {
           const data = videoDocSnap.data();
-          console.log('Fetched data:', data); // Debug log: Check the document data
-          const fetchedUploaderId = data.uploaderId || null; // Change 'uploaderId' if your field name differs
+          console.log('Fetched data:', data);
+          const fetchedUploaderId = data.uploaderId || null;
           setUploaderId(fetchedUploaderId);
 
-          // NEW: Fetch uploader's Firestore document for profile picture
           if (fetchedUploaderId) {
             const uploaderDocRef = doc(db, 'users', fetchedUploaderId);
             const uploaderDocSnap = await getDoc(uploaderDocRef);
@@ -101,7 +109,7 @@ const VideoSidebar = ({ videoId }) => {
 
   // Debug log for uploaderId state changes
   useEffect(() => {
-    console.log('Set uploaderId to:', uploaderId); // Logs the updated state
+    console.log('Set uploaderId to:', uploaderId);
   }, [uploaderId]);
 
   // Fetch likes/comments count and check if liked by current user (unchanged)
@@ -196,6 +204,27 @@ const VideoSidebar = ({ videoId }) => {
     setIsCommentOverlayOpen(false);
   };
 
+  // NEW: Open report overlay
+  const handleOpenReportOverlay = () => {
+    setIsReportOverlayOpen(true);
+  };
+
+  // NEW: Close report overlay
+  const handleCloseReportOverlay = () => {
+    setIsReportOverlayOpen(false);
+  };
+
+  // NEW: Submit report
+  const handleSubmitReport = async (reportData) => {
+    try {
+      const reportsRef = collection(db, 'reports');
+      await addDoc(reportsRef, reportData);
+    } catch (error) {
+      console.error('Error submitting report:', error);
+      throw error;
+    }
+  };
+
   // Navigate to uploader's profile on profile icon click (unchanged)
   const handleGoToProfile = () => {
     if (uploaderId) {
@@ -211,14 +240,14 @@ const VideoSidebar = ({ videoId }) => {
         <ul className="sideBar">
           <li onClick={handleGoToProfile} style={{ cursor: uploaderId ? 'pointer' : 'default' }} title="View Profile">
             <div className="iconContainer">
-              {uploaderDbUser?.photoURL ? (  // NEW: Use uploader's profile picture from Supabase via Firestore
+              {uploaderDbUser?.photoURL ? (
                 <img
                   src={uploaderDbUser.photoURL}
                   alt="Profile"
-                  className="profile-pic-icon"  // Add CSS class for styling (e.g., make it circular)
+                  className="profile-pic-icon"
                 />
               ) : (
-                <ProfileIcon />  // Fallback to icon if no picture
+                <ProfileIcon />
               )}
             </div>
           </li>
@@ -243,6 +272,14 @@ const VideoSidebar = ({ videoId }) => {
               <span>Share</span>
             </div>
           </li>
+
+          {/* NEW: Report button */}
+          <li onClick={handleOpenReportOverlay} style={{ cursor: 'pointer' }} title="Report">
+            <div className="iconContainer">
+              <ReportIcon />
+              <span>Report</span>
+            </div>
+          </li>
         </ul>
       </div>
 
@@ -250,6 +287,15 @@ const VideoSidebar = ({ videoId }) => {
         videoId={videoId}
         isOpen={isCommentOverlayOpen}
         onClose={handleCloseCommentOverlay}
+      />
+
+      {/* NEW: Report Overlay */}
+      <ReportOverlay
+        isOpen={isReportOverlayOpen}
+        onClose={handleCloseReportOverlay}
+        onSubmit={handleSubmitReport}
+        videoId={videoId}
+        currentUser={currentUser}
       />
     </>
   );

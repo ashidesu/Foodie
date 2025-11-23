@@ -64,14 +64,12 @@ const MainContent = () => {
         const userLikedVideoIds = userLikesSnap.docs.map(doc => doc.data().videoId);
 
         if (userLikedVideoIds.length === 0) {
-          // No likes yet, fallback to popular videos
-          const popularVideosQuery = query(
-            collection(db, 'videos'),
-            orderBy('views', 'desc'),
-            orderBy('uploadedAt', 'desc')
-          );
-          const popularVideosSnap = await getDocs(popularVideosQuery);
-          const videosList = await enrichVideos(popularVideosSnap.docs);
+          // No likes yet, show random videos
+          const randomVideosQuery = query(collection(db, 'videos'));
+          const randomVideosSnap = await getDocs(randomVideosQuery);
+          let videosList = await enrichVideos(randomVideosSnap.docs);
+          // Shuffle the videos for randomness
+          videosList = videosList.sort(() => Math.random() - 0.5);
           setVideos(videosList);
           setLoading(false);
           return;
@@ -96,14 +94,11 @@ const MainContent = () => {
         }
 
         if (similarUsersSet.size === 0) {
-          // No similar users, fallback again
-          const popularVideosQuery = query(
-            collection(db, 'videos'),
-            orderBy('views', 'desc'),
-            orderBy('uploadedAt', 'desc')
-          );
-          const popularVideosSnap = await getDocs(popularVideosQuery);
-          const videosList = await enrichVideos(popularVideosSnap.docs);
+          // No similar users, fallback to random videos
+          const randomVideosQuery = query(collection(db, 'videos'));
+          const randomVideosSnap = await getDocs(randomVideosQuery);
+          let videosList = await enrichVideos(randomVideosSnap.docs);
+          videosList = videosList.sort(() => Math.random() - 0.5);
           setVideos(videosList);
           setLoading(false);
           return;
@@ -128,14 +123,11 @@ const MainContent = () => {
         userLikedVideoIds.forEach(id => candidateVideoIdsSet.delete(id));
 
         if (candidateVideoIdsSet.size === 0) {
-          // No recommendations, fallback again
-          const popularVideosQuery = query(
-            collection(db, 'videos'),
-            orderBy('views', 'desc'),
-            orderBy('uploadedAt', 'desc')
-          );
-          const popularVideosSnap = await getDocs(popularVideosQuery);
-          const videosList = await enrichVideos(popularVideosSnap.docs);
+          // No recommendations, fallback to random videos
+          const randomVideosQuery = query(collection(db, 'videos'));
+          const randomVideosSnap = await getDocs(randomVideosQuery);
+          let videosList = await enrichVideos(randomVideosSnap.docs);
+          videosList = videosList.sort(() => Math.random() - 0.5);
           setVideos(videosList);
           setLoading(false);
           return;
@@ -172,11 +164,17 @@ const MainContent = () => {
 
       const videos = await Promise.all(docs.map(async (docSnap) => {
         const data = docSnap.data();
-        const uploader = usersMap.get(data.uploaderId) || { displayname: 'Unknown', username: '@unknown', photoURL: null };
-        const { data: publicUrl } = supabase.storage.from('videos').getPublicUrl(data.fileName);
+        const fileName = typeof data.fileName === 'string' ? data.fileName : '';
+
+        // Get uploader info using uploaderId field
+        const uploaderId = data.uploaderId;
+        const uploader = usersMap.get(uploaderId) || {};
+
+        const { data: publicUrlData } = supabase.storage.from('videos').getPublicUrl(fileName);
+
         return {
           id: docSnap.id,
-          videoSrc: publicUrl?.publicUrl || '',
+          videoSrc: (publicUrlData && publicUrlData.publicUrl) ? publicUrlData.publicUrl : '',
           caption: data.caption || '',
           uploaderName: uploader.displayname || 'Unknown',
           uploaderUsername: uploader.username || '@unknown',
@@ -210,9 +208,11 @@ const VideoBox = ({ video }) => {
   const [isManuallyPaused, setIsManuallyPaused] = useState(false);
   const [hasViewed, setHasViewed] = useState(false);
   const [userHasInteracted, setUserHasInteracted] = useState(false);
+  const [volume, setVolume] = useState(0.5); // Start at 50% volume
+  const [previousVolume, setPreviousVolume] = useState(0.5);
+  const [isVolumeHovered, setIsVolumeHovered] = useState(false);
   const videoRef = useRef(null);
 
-  // Track user interaction to allow autoplay
   useEffect(() => {
     const handleUserInteraction = () => {
       setUserHasInteracted(true);
@@ -283,10 +283,62 @@ const VideoBox = ({ video }) => {
       handlePause();
       setIsManuallyPaused(true);
     } else {
-      setUserHasInteracted(true); // User clicked, allow future autoplay
+      setUserHasInteracted(true);
       handlePlay();
     }
   };
+
+  const handleVolumeChange = (e) => {
+    const val = parseFloat(e.target.value);
+    setVolume(val);
+    if (videoRef.current) {
+      videoRef.current.volume = val;
+      videoRef.current.muted = val === 0;
+    }
+  };
+
+  const toggleMute = () => {
+    if (volume > 0) {
+      setPreviousVolume(volume);
+      setVolume(0);
+      if (videoRef.current) {
+        videoRef.current.volume = 0;
+        videoRef.current.muted = true;
+      }
+    } else {
+      const newVolume = previousVolume > 0 ? previousVolume : 0.5;
+      setVolume(newVolume);
+      if (videoRef.current) {
+        videoRef.current.volume = newVolume;
+        videoRef.current.muted = false;
+      }
+    }
+  };
+
+  const getVolumeIcon = () => {
+    if (volume === 0) {
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="24" height="24">
+          <path d="M3 9v6h4l5 5V4L7 9H3z" />
+          <line x1="22" y1="9" x2="16" y2="15" stroke="white" strokeWidth="2" />
+          <line x1="16" y1="9" x2="22" y2="15" stroke="white" strokeWidth="2" />
+        </svg>
+      );
+    } else if (volume < 0.5) {
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="24" height="24">
+          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" />
+        </svg>
+      );
+    } else {
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="24" height="24">
+          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+        </svg>
+      );
+    }
+  };
+
 
   return (
     <div className='videoBox'>
@@ -296,17 +348,68 @@ const VideoBox = ({ video }) => {
             ref={videoRef}
             preload="auto"
             loop
-            muted
+            muted={volume === 0}
             playsInline
             onClick={togglePlay}
             src={video.videoSrc}
           />
+          {/* Volume Control */}
+          <div
+            className="volume-control"
+            style={{
+              position: 'absolute',
+              top: '10px',
+              left: '10px',
+              zIndex: 10,
+              display: 'flex',
+              alignItems: 'center',
+            }}
+            onMouseEnter={() => setIsVolumeHovered(true)}
+            onMouseLeave={() => setIsVolumeHovered(false)}
+          >
+            <button
+              onClick={toggleMute}
+              style={{
+                background: 'rgba(0, 0, 0, 0.5)',
+                border: 'none',
+                borderRadius: '50%',
+                padding: '8px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              aria-label="Toggle mute"
+            >
+              {getVolumeIcon()}
+            </button>
+            {isVolumeHovered && (
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={volume}
+                onChange={handleVolumeChange}
+                style={{
+                  width: '80px',
+                  height: '4px',
+                  background: 'rgba(255, 255, 255, 0.5)',
+                  borderRadius: '2px',
+                  outline: 'none',
+                  cursor: 'pointer',
+                  marginLeft: '8px',
+                }}
+                aria-label="Volume slider"
+              />
+            )}
+          </div>
           <div className="uploaderDetails">
             <p className="uploaderName">{video.uploaderName}</p>
             <p className="uploaderUsername">{video.caption}</p>
             <p className="timeUploaded">{video.timeUploaded}</p>
           </div>
-          <div className="playPauseOverlay" onClick={togglePlay}>
+          <div className="playPauseOverlay" onClick={togglePlay} role="button" tabIndex={0} aria-label={isPlaying ? "Pause video" : "Play video"} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') togglePlay(); }}>
             {!isPlaying && (
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="48" height="48">
                 <path d="M8 5v14l11-7z" />

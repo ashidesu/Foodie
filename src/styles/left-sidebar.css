@@ -1,8 +1,7 @@
-/* left-sidebar.css */
+/* Dark mode colors, using #dc3545 as primary */
+
 .left-sidebar {
   width: 250px;
-  background-color: #f5f5f5;
-  border-right: 1px solid #ddd;
   padding: 20px;
   display: flex;
   flex-direction: column;
@@ -10,6 +9,7 @@
   position: fixed;
   left: 0;
   top: 0;
+  color: #eee; /* Light text */
 }
 
 .sidebar-content {
@@ -20,7 +20,7 @@
   font-size: 24px;
   font-weight: bold;
   margin-bottom: 30px;
-  color: #ff6b6b;
+  color: #dc3545; /* Primary color */
   text-align: center;
 }
 
@@ -39,17 +39,18 @@
   align-items: center;
   padding: 12px 15px;
   text-decoration: none;
-  color: #333;
+  color: #ccc; /* Light gray for text */
   border-radius: 8px;
   transition: all 0.3s ease;
 }
 
 .sidebar a:hover {
-  background-color: #e9ecef;
+  background-color: #2a2a2a; /* Darker hover background */
+  color: #fff;               /* White text on hover */
 }
 
 .sidebar a.selected {
-  background-color: #ff6b6b;
+  background-color: #dc3545; /* Primary red */
   color: white;
 }
 
@@ -57,12 +58,13 @@
   width: 20px;
   height: 20px;
   margin-right: 12px;
+  fill: currentColor; /* Icon color matches text */
 }
 
 .logout-section {
   margin-top: auto;
   padding-top: 20px;
-  border-top: 1px solid #ddd;
+  border-top: 1px solid #333;
 }
 
 .logout-btn {
@@ -80,11 +82,36 @@
 }
 
 .logout-btn:hover {
-  background-color: #f8d7da;
+  background-color: #440000; /* Dark red hover background */
+  color: #ffa1a1;            /* Lighter red text on hover */
 }
 
 .logout-icon {
   width: 20px;
   height: 20px;
   margin-right: 12px;
+  fill: currentColor;
+}
+
+/* Scrollbar (optional for dark mode) */
+.left-sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.left-sidebar::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+.left-sidebar::-webkit-scrollbar-thumb {
+  background-color: #444;
+  border-radius: 4px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .left-sidebar {
+    width: 100%;
+    position: relative;
+    height: auto;
+  }
 }
