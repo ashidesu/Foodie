@@ -1,13 +1,21 @@
 import { useState, useEffect, useRef } from 'react';
-import { db, auth } from '../firebase';
+import { db } from '../firebase';
 import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
-import '../styles/chat-overlay.css'; // Add styles for the overlay
+import '../styles/chat-overlay.css'; 
+
+const AirplaneIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" 
+    xmlns="http://www.w3.org/2000/svg" 
+    style={{ transform: 'rotate(-45deg)' }} >
+    <path d="M2 21L23 12L2 3V10L17 12L2 14V21Z" fill="#e0e0e0"/>
+  </svg>
+);
 
 const ChatOverlay = ({ currentUser, chatUser, onClose }) => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  const messagesEndRef = useRef(null); // For auto-scrolling to bottom
+  const messagesEndRef = useRef(null);
 
   useEffect(() => {
     const sentMessagesQuery = query(
@@ -24,6 +32,21 @@ const ChatOverlay = ({ currentUser, chatUser, onClose }) => {
       orderBy('timestamp', 'asc')
     );
 
+    const updateMessages = (newMsgs, type) => {
+      setMessages(prevMessages => {
+        const filtered = prevMessages.filter(msg => 
+          !(type === 'sent' 
+            ? msg.senderId === currentUser.uid && msg.receiverId === chatUser.id 
+            : msg.senderId === chatUser.id && msg.receiverId === currentUser.uid)
+        );
+        const combined = [...filtered, ...newMsgs];
+        combined.sort((a, b) => a.timestamp?.toDate() - b.timestamp?.toDate());
+        setLoading(false);
+        scrollToBottom();
+        return combined;
+      });
+    };
+
     const unsubscribeSent = onSnapshot(sentMessagesQuery, (sentSnapshot) => {
       const sentMsgs = sentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       updateMessages(sentMsgs, 'sent');
@@ -33,20 +56,6 @@ const ChatOverlay = ({ currentUser, chatUser, onClose }) => {
       const receivedMsgs = receivedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       updateMessages(receivedMsgs, 'received');
     });
-
-    const updateMessages = (newMsgs, type) => {
-      setMessages(prevMessages => {
-        // Remove old messages of this type and add new ones, then sort
-        const filtered = prevMessages.filter(msg => 
-          !(type === 'sent' ? msg.senderId === currentUser.uid && msg.receiverId === chatUser.id : msg.senderId === chatUser.id && msg.receiverId === currentUser.uid)
-        );
-        const combined = [...filtered, ...newMsgs];
-        combined.sort((a, b) => a.timestamp?.toDate() - b.timestamp?.toDate());
-        setLoading(false);
-        scrollToBottom();
-        return combined;
-      });
-    };
 
     return () => {
       unsubscribeSent();
@@ -78,7 +87,7 @@ const ChatOverlay = ({ currentUser, chatUser, onClose }) => {
   return (
     <div className="chat-overlay">
       <div className="chat-header">
-        <h4>Chat with {chatUser.displayName}</h4>
+        <h4>{chatUser.displayName}</h4>
         <button className="close-btn" onClick={onClose}>×</button>
       </div>
       <div className="chat-messages">
@@ -106,12 +115,14 @@ const ChatOverlay = ({ currentUser, chatUser, onClose }) => {
           onChange={(e) => setNewMessage(e.target.value)}
           placeholder="Type a message..."
           required
+          autoComplete="off"
         />
-        <button type="submit">Send</button>
+        <button type="submit" aria-label="Send message">
+          <AirplaneIcon />
+        </button>
       </form>
     </div>
   );
 };
 
 export default ChatOverlay;
-    

@@ -1,8 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { updateDoc, doc } from 'firebase/firestore';
-import { db, auth } from '../firebase';
+import { db } from '../firebase';
 import supabase from '../supabase';
-import '../styles/edit-profile-overlay.css'; // Import the CSS file below
+import '../styles/edit-profile-overlay.css';
 
 const EditProfileOverlay = ({ user, dbUser, onClose, onUpdate }) => {
   const [formData, setFormData] = useState({
@@ -18,13 +18,31 @@ const EditProfileOverlay = ({ user, dbUser, onClose, onUpdate }) => {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
 
+  // Helper to compare form data with original data
+  const isFormDataEqual = (a, b) => (
+    a.username === b.username &&
+    a.displayname === b.displayname &&
+    a.pronouns === b.pronouns &&
+    a.city === b.city &&
+    a.province === b.province
+  );
+
+  // Determine if there are changes compared to dbUser and photo
+  const hasChanges = !isFormDataEqual(formData, {
+    username: dbUser?.username || '',
+    displayname: dbUser?.displayname || '',
+    pronouns: dbUser?.pronouns || '',
+    city: dbUser?.city || '',
+    province: dbUser?.province || '',
+  }) || Boolean(selectedFile);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleFileSelection = (file) => {
-    if (file && file.type.startsWith('image/') && file.size <= 5 * 1024 * 1024) { // 5MB limit
+    if (file && file.type.startsWith('image/') && file.size <= 5 * 1024 * 1024) {
       setSelectedFile(file);
       setPreviewUrl(URL.createObjectURL(file));
     } else {
@@ -69,7 +87,7 @@ const EditProfileOverlay = ({ user, dbUser, onClose, onUpdate }) => {
   const handleSave = async () => {
     if (!user || !user.uid) {
       alert('You must be logged in');
-      console.error('User or user.uid is undefined:', user);
+      console.error('User or user.uid is missing:', user);
       return;
     }
 
@@ -77,57 +95,34 @@ const EditProfileOverlay = ({ user, dbUser, onClose, onUpdate }) => {
     try {
       let photoURL = dbUser?.photoURL || null;
 
-      // If a new file is selected, delete the existing photo first (if it exists), then upload the new one
       if (selectedFile) {
-        // Delete the existing profile picture if it exists
         if (dbUser?.photoURL) {
-          const url = new URL(dbUser.photoURL);
-          const pathParts = url.pathname.split('/');
-          const oldFilename = pathParts[pathParts.length - 1];
-          console.log('Attempting to delete old file:', oldFilename);
-          if (oldFilename) {
-            const { error: deleteError } = await supabase.storage
-              .from('profile-pictures')
-              .remove([oldFilename]);
-            if (deleteError) {
-              console.error('Error deleting old profile picture:', deleteError);
-              // Continue anyway, as the new upload will proceed
-            } else {
-              console.log('Old file deleted successfully');
+          try {
+            const url = new URL(dbUser.photoURL);
+            const pathParts = url.pathname.split('/');
+            const oldFilename = pathParts[pathParts.length - 1].split('?')[0];
+            if (oldFilename) {
+              const { error: deleteError } = await supabase.storage.from('profile-pictures').remove([oldFilename]);
+              if (deleteError) console.error('Error deleting old profile picture:', deleteError);
             }
-          }
+          } catch {}
         }
 
-        // Upload the new profile picture with upsert to force replacement
-        const fileExt = selectedFile.name.split('.').pop();
+        const fileExt = selectedFile.name.split('.').pop().toLowerCase();
         const fileName = `${user.uid}.${fileExt}`;
-        console.log('User UID:', user.uid);
-        console.log('Uploading new file:', fileName);
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from('profile-pictures')
           .upload(fileName, selectedFile, { upsert: true });
+        if (uploadError) throw uploadError;
 
-        if (uploadError) {
-          console.error('Error uploading new profile picture:', uploadError);
-          throw uploadError;
-        }
-
-        console.log('New file uploaded successfully');
         const { data: { publicUrl } } = supabase.storage.from('profile-pictures').getPublicUrl(fileName);
         photoURL = publicUrl;
-        console.log('New photoURL:', photoURL);
       }
 
-      // Update Firestore document
       const userDocRef = doc(db, 'users', user.uid);
-      await updateDoc(userDocRef, {
-        ...formData,
-        photoURL,
-      });
+      await updateDoc(userDocRef, { ...formData, photoURL });
 
-      // Notify parent to update state
       onUpdate({ ...formData, photoURL });
-
       alert('Profile updated successfully!');
       onClose();
     } catch (error) {
@@ -140,80 +135,28 @@ const EditProfileOverlay = ({ user, dbUser, onClose, onUpdate }) => {
 
   return (
     <div className="edit-profile-overlay">
-      <div className="overlay-content">
-        <button className="close-button" onClick={onClose}>×</button>
-        <h2>Edit Profile</h2>
+      <div className="overlay-content-profile">
+        <button className="close-button" onClick={onClose} disabled={isUploading}>×</button>
+        <h1>Edit profile</h1>
 
         <div className="form-group">
-          <label>Username:</label>
-          <input
-            type="text"
-            name="username"
-            value={formData.username}
-            onChange={handleInputChange}
-            placeholder="Enter username"
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Display Name:</label>
-          <input
-            type="text"
-            name="displayname"
-            value={formData.displayname}
-            onChange={handleInputChange}
-            placeholder="Enter display name"
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Pronouns:</label>
-          <input
-            type="text"
-            name="pronouns"
-            value={formData.pronouns}
-            onChange={handleInputChange}
-            placeholder="e.g., he/him, she/her"
-          />
-        </div>
-
-        <div className="form-group">
-          <label>City:</label>
-          <input
-            type="text"
-            name="city"
-            value={formData.city}
-            onChange={handleInputChange}
-            placeholder="Enter city"
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Province:</label>
-          <input
-            type="text"
-            name="province"
-            value={formData.province}
-            onChange={handleInputChange}
-            placeholder="Enter province"
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Profile Picture:</label>
+          <label className="field-label">Profile photo</label>
           <div
             className={`image-upload-zone ${isDragging ? 'dragging' : ''}`}
             onDragEnter={handleDragEnter}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
+            onClick={handleButtonClick}
           >
             {previewUrl ? (
-              <img src={previewUrl} alt="Preview" className="image-preview" />
+              <img src={previewUrl} alt="Profile preview" className="image-preview" />
             ) : (
-              <div className="upload-placeholder">Drag & drop or click to select image</div>
+              <div className="upload-placeholder">No image</div>
             )}
-            <button type="button" onClick={handleButtonClick}>Select Image</button>
+            <div className="edit-icon" title="Edit profile photo">
+              ✎
+            </div>
             <input
               ref={fileInputRef}
               type="file"
@@ -224,9 +167,97 @@ const EditProfileOverlay = ({ user, dbUser, onClose, onUpdate }) => {
           </div>
         </div>
 
+        <hr className="divider" />
+
+        <div className="form-group">
+          <label className="field-label" htmlFor="username">Username</label>
+          <input
+            id="username"
+            type="text"
+            name="username"
+            value={formData.username}
+            onChange={handleInputChange}
+            placeholder="username"
+            autoComplete="off"
+          />
+          <div className="info-text">
+            www.tiktok.com/@{formData.username || 'username'}
+          </div>
+          <div className="help-text">
+            Usernames can only contain letters, numbers, underscores, and periods. Changing your username will also change your profile link.
+          </div>
+        </div>
+
+        <hr className="divider" />
+
+        <div className="form-group">
+          <label className="field-label" htmlFor="displayname">Name</label>
+          <input
+            id="displayname"
+            type="text"
+            name="displayname"
+            value={formData.displayname}
+            onChange={handleInputChange}
+            placeholder="display name"
+            autoComplete="off"
+          />
+          <div className="help-text">
+            Your nickname can only be changed once every 7 days.
+          </div>
+        </div>
+
+        <hr className="divider" />
+
+        <div className="form-group">
+          <label className="field-label" htmlFor="pronouns">Pronouns</label>
+          <input
+            id="pronouns"
+            type="text"
+            name="pronouns"
+            value={formData.pronouns}
+            onChange={handleInputChange}
+            placeholder="e.g., he/him, she/her"
+            autoComplete="off"
+          />
+        </div>
+
+        <hr className="divider" />
+
+        <div className="form-group">
+          <label className="field-label" htmlFor="city">City</label>
+          <input
+            id="city"
+            type="text"
+            name="city"
+            value={formData.city}
+            onChange={handleInputChange}
+            placeholder="Enter city"
+            autoComplete="off"
+          />
+        </div>
+
+        <hr className="divider" />
+
+        <div className="form-group">
+          <label className="field-label" htmlFor="province">Province</label>
+          <input
+            id="province"
+            type="text"
+            name="province"
+            value={formData.province}
+            onChange={handleInputChange}
+            placeholder="Enter province"
+            autoComplete="off"
+          />
+        </div>
+
         <div className="button-group">
-          <button onClick={onClose} disabled={isUploading}>Cancel</button>
-          <button onClick={handleSave} disabled={isUploading}>
+          <button className="cancel-btn" onClick={onClose} disabled={isUploading}>Cancel</button>
+          <button
+            className="save-btn"
+            onClick={handleSave}
+            disabled={isUploading || !hasChanges}
+          >
             {isUploading ? 'Saving...' : 'Save'}
           </button>
         </div>

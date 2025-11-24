@@ -149,7 +149,7 @@
 }
 
 .tab-item {
-  color: #666;
+  color: #ffffff;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -162,10 +162,15 @@
   transition: color 0.3s ease;
 }
 
-.tab-item.active,
+.tab-item.active
+{
+  background-color: rgb(255, 255, 255,0.5);
+  color: rgb(255, 255, 255);
+  border-bottom-left-radius: 0px;
+  border-bottom-right-radius: 0px;
+}
 .tab-item:hover {
-  border-bottom: 2px solid white;
-  color: white;
+  color: #666;
 }
 
 /* Videos container using flex for fixed rectangle thumbnails */
@@ -193,7 +198,7 @@
 }
 
 .video-card:hover {
-  filter: brightness(1.1);
+  filter: brightness(0.5);
 }
 
 /* Thumbnail with enforced 9:16 aspect ratio */

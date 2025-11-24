@@ -321,8 +321,16 @@ const ProfilePage = () => {
     }
   }, [user, activeTab]);
 
+  // Updated handleProfileUpdate with cache-busting for photoURL
   const handleProfileUpdate = (updatedData) => {
-    setDbUser((prev) => ({ ...prev, ...updatedData }));
+    setDbUser((prev) => {
+      const newData = { ...prev, ...updatedData };
+      // If photoURL was updated, append a timestamp to bust the cache
+      if (updatedData.photoURL && updatedData.photoURL !== prev.photoURL) {
+        newData.photoURL = `${updatedData.photoURL}?t=${Date.now()}`;
+      }
+      return newData;
+    });
   };
 
   if (!user)
@@ -345,8 +353,8 @@ const ProfilePage = () => {
     <div className="profile-page-container">
       <div className="profile-header-container">
         <div className="profile-avatar-large">
-          {dbUser?.photoURL || user.photoURL ? (
-            <img alt="Profile" src={dbUser?.photoURL || user.photoURL} />
+          {dbUser?.photoURL ? (
+            <img alt="Profile" src={dbUser?.photoURL} />
           ) : (
             <div className="avatar-placeholder-large">
               {displayname.charAt(0).toUpperCase()}
@@ -395,8 +403,8 @@ const ProfilePage = () => {
             onClick={() => setActiveTab(tab)}
             aria-current={activeTab === tab}
           >
-            {tab === 'Videos' && '📹 '}
-            {tab === 'Liked' && '❤️ '}
+            {tab === 'Videos'}
+            {tab === 'Liked'}
             {tab}
           </button>
         ))}
