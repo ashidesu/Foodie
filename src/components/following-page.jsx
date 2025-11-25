@@ -118,7 +118,7 @@ const FollowedVideosFeed = () => {
   }, []);
 
   if (loading) return <div>Loading followed videos...</div>;
-  if (!videos.length) return <div>No videos uploaded by followed accounts.</div>;
+  if (!videos.length) return <div className = "no-following">No videos uploaded by followed accounts.</div>;
 
   return (
     <main className="main-content">

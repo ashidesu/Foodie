@@ -2,22 +2,26 @@
   width: 350px;
   padding: 20px;
   overflow-y: auto;
-  color: #e0e0e0; /* light text */
-  margin-left:5px;
+  color: #e0e0e0;
+  /* light text */
+  margin-left: 5px;
 }
 
 .profile-card {
-  background: #2a2a2a; /* dark grey background */
+  background: #2a2a2a;
+  /* dark grey background */
   border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.7); /* stronger shadow */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  /* stronger shadow */
   margin-bottom: 20px;
   color: #e0e0e0;
 }
 
 .profile-header h3 {
   margin: 0 0 16px 0;
-  color: #ddd; /* lighter grey for header */
+  color: #ddd;
+  /* lighter grey for header */
   font-size: 16px;
   font-weight: 600;
 }
@@ -42,7 +46,8 @@
   border-radius: 50%;
   overflow: hidden;
   cursor: pointer;
-  border: 3px solid #444; /* dark border */
+  border: 3px solid #444;
+  /* dark border */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -98,7 +103,8 @@
 
 /* Anonymous badge */
 .anonymous-badge {
-  background: #ffcb00; /* softer yellow */
+  background: #ffcb00;
+  /* softer yellow */
   color: #222;
   padding: 4px 8px;
   border-radius: 12px;
@@ -177,7 +183,8 @@
 }
 
 .see-more {
-  color: #ffcb00; /* match badge color */
+  color: #ffcb00;
+  /* match badge color */
   text-decoration: underline;
   cursor: pointer;
   font-size: 13px;
@@ -196,4 +203,25 @@
   .right-sidebar {
     display: none;
   }
+}
+
+.settings-icon {
+  position: absolute;
+  background-color: transparent;
+  top: 30px;
+  right: 30px;
+  display:flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-icon svg {
+  width: 24px;
+  height: 24px;
+  color: white;
+}
+
+.settings-icon:hover {
+  cursor: pointer;
+  border-color: transparent;
 }

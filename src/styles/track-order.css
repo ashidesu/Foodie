@@ -19,6 +19,8 @@
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
   overflow: hidden;
   user-select: none;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  cursor: default;
 }
 
 .track-order-container.collapsed {
@@ -34,75 +36,101 @@
 
 .track-order-header {
   background-color: #E91E63;
-  color: white;
+  color: #fff;
   padding: 0.75rem 1rem;
   font-weight: 700;
   font-size: 1.1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  cursor: grab;
+}
+
+.track-order-header:active {
+  cursor: grabbing;
+}
+
+.track-order-header span {
+  user-select: text;
 }
 
 .collapse-btn {
-  border: none;
   background: transparent;
+  border: none;
+  color: #fff;
   font-size: 1.2rem;
-  color: white;
+  font-weight: 700;
   cursor: pointer;
   user-select: none;
-  padding: 2px 8px 0 8px;
-  line-height: 1;
+  padding: 0;
+  margin-left: 10px;
+  width: 30px;
+  height: 30px;
+  line-height: 22px;
+  text-align: center;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.collapse-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
 }
 
 .track-order-content {
-  padding: 1rem;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  color: #222;
+  overflow-y: auto;
+  padding: 0.75rem 1rem 1rem;
+  flex-grow: 1;
+  color: #333;
 }
 
 .order-items-list {
   list-style: none;
+  margin: 0;
   padding: 0;
-  margin: 0 0 1rem 0;
 }
 
 .order-item {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 0.65rem;
-  font-weight: 600;
-  font-size: 0.9rem;
+  align-items: center;
+  margin-bottom: 0.85rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.4rem;
+  font-size: 0.95rem;
 }
 
 .order-item-name {
   flex-grow: 1;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: #333;
 }
 
 .order-item-quantity {
-  margin: 0 12px;
-  min-width: 24px;
+  color: #777;
+  min-width: 30px;
   text-align: center;
 }
 
 .order-item-subtotal {
   font-weight: 700;
   color: #E91E63;
-  min-width: 60px;
+  min-width: 65px;
   text-align: right;
 }
 
 .order-total,
 .order-status {
   font-weight: 700;
-  font-size: 1rem;
-  margin-top: 0.8rem;
+  font-size: 1.1rem;
+  margin-top: 0.5rem;
   display: flex;
   justify-content: space-between;
-  border-top: 1px solid #eee;
-  padding-top: 0.8rem;
+  border-top: 2px solid #E91E63;
+  padding-top: 0.75rem;
+  color: #E91E63;
 }
 
 .order-status strong {
@@ -111,28 +139,32 @@
 
 .movable-track-order {
   position: fixed;
-  /* or absolute, but fixed is better for movable panels */
-  z-index: 1000;
-  /* High z-index to stay on top */
-  cursor: grab;
-  /* Indicates it's draggable */
+  width: 450px;
+  max-height: 400px;
+  background-color: #fff;
+  border-radius: 12px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   user-select: none;
-  /* Prevents text selection during drag */
-  pointer-events: auto;
-  /* Ensure events are enabled */
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  cursor: default;
 }
 
-.movable-track-order.collapsed,
+.movable-track-order.collapsed {
+  height: 50px; /* Only header visible */
+}
+
 .movable-track-order.expanded {
-  /* Add any specific styles, but avoid pointer-events: none */
+  height: auto;
+  max-height: 400px;
 }
 
 .track-order-header {
   cursor: grab;
-  /* Make the header the drag handle */
 }
 
 .track-order-header:active {
   cursor: grabbing;
-  /* Change cursor when dragging */
 }

@@ -2,12 +2,13 @@
 .order-page {
   flex: 1;
   overflow-y: auto;
-  background-color: white; /* Use white or your preferred bg */
+  background-color: #1a1a1a; /* Changed to dark background */
   margin-left: 250px; /* Adjust for sidebar width */
   scrollbar-width: none; /* Firefox */
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   height: 100vh;
   padding: 16px 24px;
+  color: #e0e0e0; /* Added text color */
 }
 
 .order-page::-webkit-scrollbar {
@@ -35,7 +36,7 @@
 }
 
 .restaurants-grid::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.1); /* Lighter scrollbar for dark bg */
   border-radius: 4px;
 }
 
@@ -45,11 +46,11 @@
 
 /* Restaurant card */
 .restaurant-card {
-  min-width: 260px;
-  max-width: 260px;
-  background-color: #fff;
+  min-width: 350px;
+  height:250px;
+  background-color: #2a2a2a; /* Dark card background */
   border-radius: 12px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3); /* Darker shadow */
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -60,7 +61,7 @@
 
 .restaurant-card:hover,
 .restaurant-card:focus {
-  box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4); /* Darker shadow on hover */
   transform: translateY(-4px);
   outline: none;
 }
@@ -68,7 +69,7 @@
 /* Image section */
 .restaurant-photo {
   width: 100%;
-  height: 140px;
+  height: 165px;
   object-fit: cover;
   border-radius: 12px 12px 0 0;
   position: relative;
@@ -76,11 +77,11 @@
 
 /* Placeholder image style */
 .restaurant-photo.placeholder {
-  background: #f0f0f0;
+  background: #333333; /* Darker placeholder */
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #bbb;
+  color: #888888; /* Lighter text */
   font-size: 16px;
   height: 140px;
   border-radius: 12px 12px 0 0;
@@ -91,7 +92,7 @@
   position: absolute;
   bottom: 6px;
   right: 6px;
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: rgba(0, 0, 0, 0.7); /* Darker badge */
   color: white;
   font-size: 12px;
   font-weight: 700;
@@ -128,7 +129,7 @@
 .restaurant-name {
   font-weight: 700;
   font-size: 18px;
-  color: #222;
+  color: #ffffff; /* White text */
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -145,7 +146,7 @@
 }
 
 .rating span {
-  color: #555; /* rating count color */
+  color: #cccccc; /* Lighter rating count color */
   font-weight: 400;
 }
 
@@ -156,7 +157,7 @@
   gap: 10px;
   margin-top: 4px;
   font-size: 13px;
-  color: #666;
+  color: #b8b8b8; /* Lighter text */
   align-items: center;
 }
 
@@ -170,18 +171,18 @@
 .restaurant-details .detail-icon {
   width: 14px;
   height: 14px;
-  fill: #666;
+  fill: #b8b8b8; /* Lighter icon color */
 }
 
 /* Text bold for price */
 .price {
   font-weight: 600;
-  color: #333;
+  color: #ffffff; /* White text */
 }
 
 /* Delivery fee with strike-through saver price placeholder */
 .delivery-fee {
-  color: #777;
+  color: #888888; /* Lighter text */
   font-size: 13px;
 }
 
@@ -189,6 +190,6 @@
 
 /* Accessibility focus outline for cards */
 .restaurant-card:focus-visible {
-  outline: 2px solid #007bff;
+  outline: 2px solid #ffffff; /* White outline for dark background */
   outline-offset: 2px;
 }

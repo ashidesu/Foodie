@@ -1,25 +1,211 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import '../styles/cart.css';
 import '../styles/restaurants.css';  
 import '../styles/dish-overlay.css';
-import '../styles/cart.css';
 import '../styles/track-order.css';
-import '../styles/payment-review.css'; // Add this for the new component
+import '../styles/payment-review.css';
 import { useParams } from 'react-router-dom';
 import { getAuth } from 'firebase/auth';
 import { db } from '../firebase';
 import { collection, getDocs, query, where, orderBy, addDoc, Timestamp, onSnapshot, updateDoc, doc } from 'firebase/firestore';
 import supabase from '../supabase';
+import MovablePaymentReview from './movable-payment-review.jsx';
+import MovableTrackOrder from './movable-track-order.jsx';
 
-import DishOverlay from './dish-overlay';
-import MovableCart from './cart';
-import MovableTrackOrder from './movable-track-order';
-import MovablePaymentReview from './movable-payment-review'; // New import
+// MovableCart Component
+const MovableCart = ({ cart, onRemove, onCancel, onAddOrder }) => {
+  const [collapsed, setCollapsed] = useState(true);
+  const [position, setPosition] = useState({ x: 20, y: 60 });
+  const [dragging, setDragging] = useState(false);
+  const dragOffset = useRef({ x: 0, y: 0 });
+  const cartRef = useRef(null);
 
-const truncateText = (text, maxLength) => {
-  if (!text) return '';
-  return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
+  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const cartTotal = cart.reduce((sum, item) => sum + item.quantity * item.price, 0);
+
+  // Drag event handlers
+  const onMouseDown = (e) => {
+    if (e.button !== 0) return; // Left-click only
+    setDragging(true);
+    const rect = cartRef.current.getBoundingClientRect();
+    dragOffset.current = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    };
+    e.preventDefault();
+  };
+
+  const onMouseMove = (e) => {
+    if (!dragging) return;
+    const newX = Math.min(window.innerWidth - cartRef.current.offsetWidth, Math.max(0, e.clientX - dragOffset.current.x));
+    const newY = Math.min(window.innerHeight - cartRef.current.offsetHeight, Math.max(0, e.clientY - dragOffset.current.y));
+    setPosition({ x: newX, y: newY });
+  };
+
+  const onMouseUp = () => {
+    setDragging(false);
+  };
+
+  useEffect(() => {
+    if (dragging) {
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    } else {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, [dragging]);
+
+  if (cart.length === 0) return null;
+
+  return (
+    <div
+      className={`movable-cart ${collapsed ? 'collapsed' : 'expanded'}`}
+      style={{ top: position.y, left: position.x }}
+      ref={cartRef}
+      role="complementary"
+      aria-label="Shopping cart"
+    >
+      <div
+        className="cart-header"
+        onMouseDown={onMouseDown}
+        aria-grabbed={dragging}
+        tabIndex={0}
+        aria-label="Drag shopping cart panel"
+        role="button"
+        onKeyDown={e => {
+          if (e.key === 'Enter' || e.key === ' ') setCollapsed(!collapsed);
+        }}
+      >
+        {collapsed ? (
+          <>
+            <span>{totalItems} item{totalItems > 1 ? 's' : ''}</span>
+            <span>&#8226;</span>
+            <span>₱ {cartTotal.toFixed(2)}</span>
+          </>
+        ) : (
+          <span>Shopping Cart</span>
+        )}
+        <button
+          aria-label={collapsed ? 'Expand cart' : 'Collapse cart'}
+          onClick={() => setCollapsed(!collapsed)}
+          className="collapse-btn"
+          type="button"
+        >
+          {collapsed ? '▼' : '▲'}
+        </button>
+      </div>
+
+      {!collapsed && (
+        <div className="cart-content">
+          <ul className="cart-items-list">
+            {cart.map(({ id, name, quantity, price,imageSrc }) => (
+              <li key={id} className="cart-item">
+                <div className="item-info">
+                  <span className="item-name">{name}</span>
+                  <span className="item-quantity">x{quantity}</span>
+                  <span className="item-subtotal">₱ {(quantity * price).toFixed(2)}</span>
+                </div>
+                <button
+                  aria-label={`Remove ${name} from cart`}
+                  className="remove-btn"
+                  onClick={() => onRemove(id)}
+                  type="button"
+                >
+                  ✕
+                </button>
+              </li>
+            ))}
+          </ul>
+          <div className="cart-footer">
+            <span className="cart-total-label">Total:</span>
+            <span className="cart-total-value">₱ {cartTotal.toFixed(2)}</span>
+          </div>
+
+          <div className="cart-actions">
+            <button 
+              className="cancel-order-btn" 
+              type="button" 
+              onClick={onCancel}
+              aria-label="Cancel entire order"
+            >
+              Cancel Order
+            </button>
+
+            <button
+              className="add-order-btn"
+              type="button"
+              onClick={() => onAddOrder(cart, cartTotal)}
+              aria-label="Add order"
+            >
+              Review Payment Method
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
+// DishOverlay Component
+const DishOverlay = ({ dish, onClose, onAddToCart }) => {
+  const [quantity, setQuantity] = useState(1);
+
+  if (!dish) return null;
+
+  const increment = () => setQuantity(q => q + 1);
+  const decrement = () => setQuantity(q => (q > 1 ? q - 1 : 1));
+
+  return (
+    <div className="overlay-backdrop" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="dish-title" tabIndex={-1}>
+      <div className="overlay-container" onClick={e => e.stopPropagation()}>
+        <button
+          className="overlay-close-btn"
+          onClick={onClose}
+          aria-label="Close dish details"
+          type="button"
+        >
+          ×
+        </button>
+
+        <img
+          src={dish.imageSrc || 'https://via.placeholder.com/360x240?text=No+Image'}
+          alt={dish.name}
+          className="overlay-image"
+          loading="lazy"
+        />
+
+        <div className="dish-info-section">
+          <h2 id="dish-title" className="dish-name">{dish.name}</h2>
+          <p className="dish-price">₱ {dish.price}</p>
+          <p className="dish-description">{dish.description}</p>
+        </div>
+
+        {/* Quantity selector and Add to Cart button in fixed footer */}
+        <div className="overlay-footer">
+          <div className="quantity-selector">
+            <button type="button" onClick={decrement} aria-label="Decrease quantity" className="qty-btn">−</button>
+            <span className="qty-value" aria-live="polite">{quantity}</span>
+            <button type="button" onClick={increment} aria-label="Increase quantity" className="qty-btn">+</button>
+          </div>
+          <button
+            type="button"
+            className="add-to-cart-btn"
+            onClick={() => onAddToCart(dish.id, quantity)}
+          >
+            Add to cart
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Main RestaurantPage Component
 const RestaurantPage = () => {
   const { id: restaurantId } = useParams();
 
@@ -31,7 +217,13 @@ const RestaurantPage = () => {
   const [overlayDishId, setOverlayDishId] = useState(null);
   const [cart, setCart] = useState([]);
   const [currentOrder, setCurrentOrder] = useState(null);
-  const [showPaymentReview, setShowPaymentReview] = useState(false); // New state for payment review
+  const [showPaymentReview, setShowPaymentReview] = useState(false);
+  const [showCart, setShowCart] = useState(true); // Add state for cart visibility
+
+  const truncateText = (text, maxLength) => {
+    if (!text) return '';
+    return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
+  };
 
   useEffect(() => {
     const fetchDishes = async () => {
@@ -126,18 +318,24 @@ const RestaurantPage = () => {
 
   const dishInOverlay = dishes.find(d => d.id === overlayDishId);
 
-  // Add to cart merges by dish id only (no add-ons)
+  // FIXED: Add to cart function - now properly handles quantity without doubling
   const handleAddToCart = (dishId, quantity) => {
     setCart(prevCart => {
-      const existingIdx = prevCart.findIndex(item => item.id === dishId);
-      if (existingIdx !== -1) {
-        const newCart = [...prevCart];
-        newCart[existingIdx].quantity += quantity;
-        return newCart;
+      const existingItem = prevCart.find(item => item.id === dishId);
+      
+      if (existingItem) {
+        // If item already exists, update the quantity
+        return prevCart.map(item =>
+          item.id === dishId
+            ? { ...item, quantity: item.quantity + quantity }
+            : item
+        );
+      } else {
+        // If item doesn't exist, add it to cart
+        const dish = dishes.find(d => d.id === dishId);
+        if (!dish) return prevCart;
+        return [...prevCart, { ...dish, quantity }];
       }
-      const dish = dishes.find(d => d.id === dishId);
-      if (!dish) return prevCart;
-      return [...prevCart, { ...dish, quantity }];
     });
     closeOverlay();
   };
@@ -151,11 +349,13 @@ const RestaurantPage = () => {
   };
 
   const handleReviewPayment = () => {
+    setShowCart(false); // Hide cart when opening payment review
     setShowPaymentReview(true);
   };
 
   const handleCancelPaymentReview = () => {
     setShowPaymentReview(false);
+    setShowCart(true); // Show cart again when canceling payment review
   };
 
   const handleSubmitOrder = async (cartItems, totalPrice, paymentMethod) => {
@@ -188,6 +388,7 @@ const RestaurantPage = () => {
       setCurrentOrder({ ...orderPayload, id: docRef.id });
       setCart([]);
       setShowPaymentReview(false); // Close review after submission
+      setShowCart(true); // Show cart again after order is submitted
     } catch (error) {
       console.error('Failed to create order:', error);
       alert('Failed to submit order. Please try again.');
@@ -337,20 +538,22 @@ const RestaurantPage = () => {
         />
       )}
 
-      {/* Movable Cart Panel */}
-      <MovableCart
-        cart={cart}
-        onRemove={handleRemoveFromCart}
-        onCancel={handleCancelOrder}
-        onAddOrder={handleReviewPayment} // Changed to open payment review
-      />
+      {/* Movable Cart Panel - conditionally rendered */}
+      {showCart && (
+        <MovableCart
+          cart={cart}
+          onRemove={handleRemoveFromCart}
+          onCancel={handleCancelOrder}
+          onAddOrder={handleReviewPayment}
+        />
+      )}
 
       {/* Movable Payment Review Panel */}
       {showPaymentReview && (
         <MovablePaymentReview
           cart={cart}
           cartTotal={totalCartPrice}
-          deliveryFee={50} // Fixed delivery fee; adjust as needed
+          deliveryFee={50}
           onConfirm={handleSubmitOrder}
           onCancel={handleCancelPaymentReview}
         />

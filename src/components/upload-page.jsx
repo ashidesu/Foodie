@@ -195,53 +195,6 @@ const UploadPage = () => {
           </button>
         </div>
       )}
-
-      {/* Video Specifications Section */}
-      <div className="specifications-grid">
-        {/* Size and Duration */}
-        <div className="spec-item">
-          <Video size={20} className="spec-icon" />
-          <div className="spec-content">
-            <h3 className="spec-title">Size and duration</h3>
-            <p className="spec-description">
-              Maximum size: 30 GB, video duration: 60 minutes.
-            </p>
-          </div>
-        </div>
-
-        {/* File Formats */}
-        <div className="spec-item">
-          <FileText size={20} className="spec-icon" />
-          <div className="spec-content">
-            <h3 className="spec-title">File formats</h3>
-            <p className="spec-description">
-              Recommended: ".mp4". Other major formats are supported.
-            </p>
-          </div>
-        </div>
-
-        {/* Video Resolutions */}
-        <div className="spec-item">
-          <Monitor size={20} className="spec-icon" />
-          <div className="spec-content">
-            <h3 className="spec-title">Video resolutions</h3>
-            <p className="spec-description">
-              High-resolution recommended: 1080p, 1440p, 4K.
-            </p>
-          </div>
-        </div>
-
-        {/* Aspect Ratios */}
-        <div className="spec-item">
-          <Lightbulb size={20} className="spec-icon" />
-          <div className="spec-content">
-            <h3 className="spec-title">Aspect ratios</h3>
-            <p className="spec-description">
-              Recommended: 16:9 for landscape, 9:16 for vertical.
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

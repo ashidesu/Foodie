@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import '../styles/cart.css';
+// MovableCart Component
+import { createClient } from '@supabase/supabase-js';
+import supabase from '../supabase';
 
 const MovableCart = ({ cart, onRemove, onCancel, onAddOrder }) => {
   const [collapsed, setCollapsed] = useState(true);
@@ -91,23 +92,34 @@ const MovableCart = ({ cart, onRemove, onCancel, onAddOrder }) => {
       {!collapsed && (
         <div className="cart-content">
           <ul className="cart-items-list">
-            {cart.map(({ id, name, quantity, price }) => (
-              <li key={id} className="cart-item">
-                <div className="item-info">
-                  <span className="item-name">{name}</span>
-                  <span className="item-quantity">x{quantity}</span>
-                  <span className="item-subtotal">₱ {(quantity * price).toFixed(2)}</span>
-                </div>
-                <button
-                  aria-label={`Remove ${name} from cart`}
-                  className="remove-btn"
-                  onClick={() => onRemove(id)}
-                  type="button"
-                >
-                  ✕
-                </button>
-              </li>
-            ))}
+            {cart.map(({ id, name, quantity, price, imageSrc }) => {
+              // Copied image fetching method from DishOverlay
+              const imageUrl = imageSrc || 'https://via.placeholder.com/50x50?text=No+Image';
+              
+              return (
+                <li key={id} className="cart-item">
+                  <img 
+                    src={imageUrl} 
+                    alt={name} 
+                    className="item-image" 
+                    onError={(e) => { e.target.src = 'https://via.placeholder.com/50x50?text=No+Image'; }} 
+                  />
+                  <div className="item-info">
+                    <span className="item-name">{name}</span>
+                    <span className="item-quantity">x{quantity}</span>
+                    <span className="item-subtotal">₱ {(quantity * price).toFixed(2)}</span>
+                  </div>
+                  <button
+                    aria-label={`Remove ${name} from cart`}
+                    className="remove-btn"
+                    onClick={() => onRemove(id)}
+                    type="button"
+                  >
+                    ✕
+                  </button>
+                </li>
+              );
+            })}
           </ul>
           <div className="cart-footer">
             <span className="cart-total-label">Total:</span>
