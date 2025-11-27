@@ -2,7 +2,7 @@
 .order-page {
   flex: 1;
   overflow-y: auto;
-  background-color: #1a1a1a; /* Changed to dark background */
+  background-color: #121212; /* Changed to dark background */
   margin-left: 250px; /* Adjust for sidebar width */
   scrollbar-width: none; /* Firefox */
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -192,4 +192,17 @@
 .restaurant-card:focus-visible {
   outline: 2px solid #ffffff; /* White outline for dark background */
   outline-offset: 2px;
+}
+.anonymous-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 50vh;
+  text-align: center;
+}
+.anonymous-message p {
+  margin-bottom: 20px;
+  font-size: 18px;
+  font-weight: 400;
 }

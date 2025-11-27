@@ -40,6 +40,8 @@
   background-color: #1a1a1a;
   scrollbar-width: thin;
   scrollbar-color: #353535 transparent;
+  display: flex; /* Added: Enable flexbox for proper message stacking */
+  flex-direction: column; /* Added: Stack messages vertically */
 }
 
 .chat-messages::-webkit-scrollbar {
@@ -76,7 +78,6 @@
   border-bottom-left-radius: 4px;
   margin-right: auto; /* hug left side properly */
 }
-
 
 .message small {
   display: block;

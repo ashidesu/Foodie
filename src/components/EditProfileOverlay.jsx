@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { updateDoc, doc } from 'firebase/firestore';
+import { updateDoc, doc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import supabase from '../supabase';
 import '../styles/edit-profile-overlay.css';
@@ -16,6 +16,9 @@ const EditProfileOverlay = ({ user, dbUser, onClose, onUpdate }) => {
   const [previewUrl, setPreviewUrl] = useState(dbUser?.photoURL || null);
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [usernameError, setUsernameError] = useState('');
+  const [usernameWarning, setUsernameWarning] = useState('');
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
   const fileInputRef = useRef(null);
 
   // Helper to compare form data with original data
@@ -28,17 +31,50 @@ const EditProfileOverlay = ({ user, dbUser, onClose, onUpdate }) => {
   );
 
   // Determine if there are changes compared to dbUser and photo
-  const hasChanges = !isFormDataEqual(formData, {
+  const hasChanges = (!isFormDataEqual(formData, {
     username: dbUser?.username || '',
     displayname: dbUser?.displayname || '',
     pronouns: dbUser?.pronouns || '',
     city: dbUser?.city || '',
     province: dbUser?.province || '',
-  }) || Boolean(selectedFile);
+  }) || Boolean(selectedFile)) && !usernameError && !usernameWarning;
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (name === 'username') {
+      // Convert to lowercase and remove invalid characters
+      const sanitized = value.toLowerCase().replace(/[^a-z0-9.]/g, '');
+      setFormData((prev) => ({ ...prev, [name]: sanitized }));
+      // Check for invalid characters in original value
+      if (value !== sanitized) {
+        setUsernameWarning('Only letters, numbers, and periods are allowed.');
+      } else {
+        setUsernameWarning('');
+      }
+      setUsernameError(''); // Reset error on change
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handleUsernameBlur = async () => {
+    if (!formData.username.trim() || usernameWarning) return;
+    setIsCheckingUsername(true);
+    try {
+      const q = query(collection(db, 'users'), where('username', '==', formData.username.trim()));
+      const querySnapshot = await getDocs(q);
+      const exists = querySnapshot.docs.some(doc => doc.id !== user.uid); // Exclude current user
+      if (exists) {
+        setUsernameError('Username already exists');
+      } else {
+        setUsernameError('');
+      }
+    } catch (error) {
+      console.error('Error checking username:', error);
+      setUsernameError('Error checking username');
+    } finally {
+      setIsCheckingUsername(false);
+    }
   };
 
   const handleFileSelection = (file) => {
@@ -88,6 +124,11 @@ const EditProfileOverlay = ({ user, dbUser, onClose, onUpdate }) => {
     if (!user || !user.uid) {
       alert('You must be logged in');
       console.error('User or user.uid is missing:', user);
+      return;
+    }
+
+    if (usernameError || usernameWarning) {
+      alert('Please fix the username issues before saving.');
       return;
     }
 
@@ -177,12 +218,15 @@ const EditProfileOverlay = ({ user, dbUser, onClose, onUpdate }) => {
             name="username"
             value={formData.username}
             onChange={handleInputChange}
+            onBlur={handleUsernameBlur}
             placeholder="username"
             autoComplete="off"
+            className={(usernameError || usernameWarning) ? 'error' : ''}
+            disabled={isCheckingUsername}
           />
-          <div className="info-text">
-            www.tiktok.com/@{formData.username || 'username'}
-          </div>
+          {isCheckingUsername && <div className="help-text">Checking username...</div>}
+          {usernameWarning && <div className="error-text">{usernameWarning}</div>}
+          {usernameError && <div className="error-text">{usernameError}</div>}
           <div className="help-text">
             Usernames can only contain letters, numbers, underscores, and periods. Changing your username will also change your profile link.
           </div>

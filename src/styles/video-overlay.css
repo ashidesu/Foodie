@@ -1,313 +1,296 @@
+/* Video Overlay Styles - Dark Theme Inspired by Auth Styles */
+
 .video-overlay-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: Arial, sans-serif;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  font-family: 'Arial', sans-serif; /* Assuming a default font; adjust as needed */
 }
 
 .video-overlay-backdrop {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.9);
-    cursor: pointer;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  /* Removed backdrop-filter: blur(5px); as it may cause rendering issues or black screens on some systems/browsers */
 }
 
 .video-overlay-content {
-    position: relative;
-    display: flex;
-    max-width: 960px;
-    width: 90%;
-    background: #111;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
-    color: white;
-    z-index: 10;
-    gap: 24px;
-    padding: 20px;
+  position: relative;
+  display: flex;
+  background-color: #1a1a1a;
+  border-radius: 12px;
+  overflow: hidden;
+  max-width: 1200px;
+  width: 90%;
+  height: 80vh;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
-/* Video Player Section */
-
 .video-player-section {
-    flex: 2;
-    background: black;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 12px;
-    overflow: hidden;
+  flex: 2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #000000;
 }
 
 .overlay-video-player {
-    width: 100%;
-    height: auto;
-    max-height: 560px;
-    outline: none;
-    display: block;
-    border-radius: 12px;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 0;
 }
-
-/* Video Interactions Section */
 
 .video-interactions-section {
-    flex: 1;
-    background-color: #222;
-    border-radius: 12px;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    height: 560px; /* Fixed height to keep top elements sticky */
-    box-sizing: border-box;
+  flex: 1;
+  padding: 20px;
+  flex-direction: column;
+  color: #e0e0e0;
+  overflow-y: auto;
 }
 
-/* Uploader info row */
-
 .uploader-info-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 12px;
+  background-color: #2a2a2a;
+  border-radius: 8px;
+  transition: background-color 0.3s ease;
+}
+
+.uploader-info-row:hover {
+  background-color: #353535;
 }
 
 .uploader-avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    object-fit: cover;
-    flex-shrink: 0;
-    background-color: #444;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  margin-right: 12px;
+  object-fit: cover;
 }
 
 .avatar-placeholder {
-    width: 48px;
-    height: 48px;
-    background-color: #555;
-    border-radius: 50%;
-    font-size: 24px;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    user-select: none;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: #2a2a2a;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: bold;
+  margin-right: 12px;
 }
 
 .uploader-details {
-    display: flex;
-    flex-direction: column;
+  display: flex;
+  flex-direction: column;
 }
 
 .nickname {
-    font-weight: 600;
-    font-size: 18px;
-    color: #fff;
-    line-height: 1.2;
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 4px;
 }
 
 .upload-date {
-    font-size: 14px;
-    color: #aaa;
-    margin-top: 2px;
+  font-size: 12px;
+  color: #cccccc;
 }
-
-/* Video caption */
 
 .video-caption {
-    font-size: 14px;
-    color: #ccc;
-    margin-bottom: 16px;
-    white-space: pre-wrap;
-    user-select: text;
+  margin-bottom: 20px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #e0e0e0;
 }
 
-/* Interaction buttons */
-
 .interaction-buttons {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 16px;
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
 }
 
 .interaction-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: transparent;
-    border: none;
-    color: white;
-    font-size: 14px;
-    cursor: pointer;
-    transition: color 0.3s ease;
-    user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: transparent;
+  border: none;
+  color: #e0e0e0;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background-color 0.3s ease;
 }
 
 .interaction-btn:hover {
-    color: #ff2a68;
+  background-color: #2a2a2a;
 }
 
-/* Comments section */
+.interaction-btn svg {
+  width: 24px;
+  height: 24px;
+}
 
 .comments-section {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden; /* Prevent overflow, let comments-list handle scrolling */
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .comments-list {
-    flex: 1;
-    overflow-y: auto;
-    padding-bottom: 10px;
+  flex: 1;
+  margin-bottom: 20px;
+  overflow-y: auto;
+  max-height: 300px;
 }
 
-/* Individual comment */
-
 .comment-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 10px 0;
-    border-bottom: 1px solid #222;
-    color: #eee;
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  padding: 12px;
+  background-color: #2a2a2a;
+  border-radius: 8px;
 }
 
 .comment-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    object-fit: cover;
-    flex-shrink: 0;
-    background-color: #444;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 12px;
+  object-fit: cover;
 }
 
 .comment-content {
-    flex: 1;
+  flex: 1;
+}
+
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
 }
 
 .comment-username {
-    font-weight: 700;
-    font-size: 14px;
-    color: #fff;
-    user-select: text;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.comment-timestamp {
+  font-size: 12px;
+  color: #cccccc;
 }
 
 .comment-text {
-    font-size: 13px;
-    margin-top: 2px;
-    white-space: pre-wrap;
-    word-break: break-word;
-    user-select: text;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #e0e0e0;
+  margin: 0;
 }
-
-/* New comment input */
 
 .new-comment {
-    display: flex;
-    gap: 8px;
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid #333;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  position: absolute;
+  bottom: 20px;
+  width:375px;
 }
-
 .new-comment input {
-    flex: 1;
-    padding: 8px 12px;
-    border: 1px solid #555;
-    border-radius: 6px;
-    background: #333;
-    color: white;
-    font-size: 14px;
+  background-color: #2a2a2a;
+  border: none;
+  border-radius: 4px;
+  color: #ffffff;
+  font-size: 14px;
+  padding: 12px 16px;
+  outline: none
 }
 
 .new-comment input::placeholder {
-    color: #aaa;
+  color: #666666;
 }
 
 .new-comment button {
-    padding: 8px 16px;
-    background: #ff2a68;
-    border: none;
-    color: white;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: background-color 0.3s ease;
+  background-color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  color: #000000;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
 .new-comment button:hover {
-    background: #e0245e;
+  background-color: #e8e8e8;
 }
 
-/* Overlay close button */
+.login-prompt {
+  font-size: 14px;
+  color: #cccccc;
+  text-align: center;
+  margin-top: 16px;
+}
 
 .overlay-close-btn {
-    position: absolute;
-    top: 12px;
-    right: 16px;
-    background: transparent;
-    border: none;
-    color: white;
-    font-size: 30px;
-    cursor: pointer;
-    font-weight: 700;
-    line-height: 1;
-    user-select: none;
-    transition: color 0.3s ease;
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background-color: #2a2a2a;
+  border: none;
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 20px;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.3s ease;
 }
 
 .overlay-close-btn:hover {
-    color: #ff2a68;
+  background-color: #353535;
 }
 
-/* Scrollbar styling for the comments-list */
+/* Responsive Design */
+@media (max-width: 768px) {
+  .video-overlay-content {
+    flex-direction: column;
+    height: 90vh;
+  }
 
-.comments-list::-webkit-scrollbar {
-    width: 8px;
-}
+  .video-player-section {
+    flex: none;
+    height: 50%;
+  }
 
-.comments-list::-webkit-scrollbar-thumb {
-    background-color: #555;
-    border-radius: 4px;
-}
+  .video-interactions-section {
+    flex: none;
+    height: 50%;
+  }
 
-/* Responsive adjustments */
-
-@media (max-width: 800px) {
-    .video-overlay-content {
-        flex-direction: column;
-        max-height: 90vh;
-        max-width: 90vw;
-        padding: 10px;
-        gap: 15px;
-    }
-
-    .video-player-section,
-    .video-interactions-section {
-        max-height: none;
-        width: 100%;
-    }
-
-    .video-interactions-section {
-        height: 400px; /* Adjust for mobile */
-    }
-
-    .overlay-video-player {
-        max-height: 400px;
-    }
-}
-.upload-date {
-  font-size: 14px;
-  color: #aaa;
-  margin-top: 2px;
-  user-select: text;
+  .comments-list {
+    max-height: 200px;
+  }
 }

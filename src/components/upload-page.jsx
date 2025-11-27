@@ -4,10 +4,34 @@ import { v4 as uuidv4 } from 'uuid'; // For generating video ID
 import { db, auth } from '../firebase'; // Assuming Firebase is configured and exported
 import { collection, addDoc } from 'firebase/firestore'; // Add this import for v9+ Firestore
 import supabase from '../supabase.js'; // Assuming Supabase client is configured and exported
+import { Navigate, useNavigate } from 'react-router-dom'; // Added useNavigate import
 
 import '../styles/upload-page.css';
 
 const UploadPage = () => {
+  // Check if user is logged in; if not, redirect to login
+  if (!auth.currentUser) {
+    return <Navigate to="/login" />;
+  }
+
+  // If user is anonymous, show message with login button
+  if (auth.currentUser.isAnonymous) {
+    const navigate = useNavigate();
+    return (
+      <div className="upload-page-container">
+        <div className="anonymous-message">
+          <p>This feature is not available for anonymous users.</p>
+          <button
+            className="login-button"
+            onClick={() => navigate('/login')}
+          >
+            Log In to Access
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [caption, setCaption] = useState('');

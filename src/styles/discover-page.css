@@ -1,6 +1,6 @@
 /* Container */
 .discover-page {
-  background-color: #0a0a0a; /* Dark black background */
+  background-color: #121212; /* Dark black background */
   color: #fff;
   font-family: 'Proxima Nova', -apple-system, BlinkMacSystemFont, sans-serif;
   margin-left: 250px;
@@ -331,4 +331,17 @@
   .tabs {
     justify-content: flex-start;
   }
+}
+.anonymous-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 50vh;
+  text-align: center;
+}
+.anonymous-message p {
+  margin-bottom: 20px;
+  font-size: 18px;
+  font-weight: 400;
 }

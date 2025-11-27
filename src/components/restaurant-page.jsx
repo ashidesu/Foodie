@@ -1,19 +1,54 @@
 import React, { useState, useEffect, useRef } from 'react';
 import '../styles/cart.css';
-import '../styles/restaurants.css';  
+import '../styles/restaurants.css';
 import '../styles/dish-overlay.css';
 import '../styles/track-order.css';
 import '../styles/payment-review.css';
 import { useParams } from 'react-router-dom';
 import { getAuth } from 'firebase/auth';
 import { db } from '../firebase';
-import { collection, getDocs, query, where, orderBy, addDoc, Timestamp, onSnapshot, updateDoc, doc } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, addDoc, Timestamp, onSnapshot, updateDoc, doc, getDoc } from 'firebase/firestore';
 import supabase from '../supabase';
 import MovablePaymentReview from './movable-payment-review.jsx';
 import MovableTrackOrder from './movable-track-order.jsx';
 
+// Helper: Check if restaurant is currently open based on openHours
+const isRestaurantOpen = (openHours) => {
+  if (!openHours) return false;
+
+  const daysOfWeek = [
+    'sunday',
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+  ];
+
+  const now = new Date();
+  const dayName = daysOfWeek[now.getDay()]; // Sunday = 0
+
+  if (!openHours[dayName]?.enabled) return false;
+
+  const openTimeStr = openHours[dayName].open || '09:00';
+  const closeTimeStr = openHours[dayName].close || '17:30';
+
+  // Parse hours and minutes
+  const [openHour, openMinute] = openTimeStr.split(':').map(Number);
+  const [closeHour, closeMinute] = closeTimeStr.split(':').map(Number);
+
+  // Create Date objects for open and close today
+  const openDate = new Date(now);
+  openDate.setHours(openHour, openMinute, 0, 0);
+  const closeDate = new Date(now);
+  closeDate.setHours(closeHour, closeMinute, 0, 0);
+
+  return now >= openDate && now <= closeDate;
+};
+
 // MovableCart Component
-const MovableCart = ({ cart, onRemove, onCancel, onAddOrder }) => {
+const MovableCart = ({ cart, onRemove, onCancel, onAddOrder, isOpen }) => {
   const [collapsed, setCollapsed] = useState(true);
   const [position, setPosition] = useState({ x: 20, y: 60 });
   const [dragging, setDragging] = useState(false);
@@ -103,7 +138,7 @@ const MovableCart = ({ cart, onRemove, onCancel, onAddOrder }) => {
       {!collapsed && (
         <div className="cart-content">
           <ul className="cart-items-list">
-            {cart.map(({ id, name, quantity, price,imageSrc }) => (
+            {cart.map(({ id, name, quantity, price, imageSrc }) => (
               <li key={id} className="cart-item">
                 <div className="item-info">
                   <span className="item-name">{name}</span>
@@ -127,9 +162,9 @@ const MovableCart = ({ cart, onRemove, onCancel, onAddOrder }) => {
           </div>
 
           <div className="cart-actions">
-            <button 
-              className="cancel-order-btn" 
-              type="button" 
+            <button
+              className="cancel-order-btn"
+              type="button"
               onClick={onCancel}
               aria-label="Cancel entire order"
             >
@@ -141,9 +176,11 @@ const MovableCart = ({ cart, onRemove, onCancel, onAddOrder }) => {
               type="button"
               onClick={() => onAddOrder(cart, cartTotal)}
               aria-label="Add order"
+              disabled={!isOpen}
             >
               Review Payment Method
             </button>
+            {!isOpen && <p className="closed-message">Ordering is disabled because the restaurant is closed.</p>}
           </div>
         </div>
       )}
@@ -152,7 +189,7 @@ const MovableCart = ({ cart, onRemove, onCancel, onAddOrder }) => {
 };
 
 // DishOverlay Component
-const DishOverlay = ({ dish, onClose, onAddToCart }) => {
+const DishOverlay = ({ dish, onClose, onAddToCart, isOpen }) => {
   const [quantity, setQuantity] = useState(1);
 
   if (!dish) return null;
@@ -196,9 +233,11 @@ const DishOverlay = ({ dish, onClose, onAddToCart }) => {
             type="button"
             className="add-to-cart-btn"
             onClick={() => onAddToCart(dish.id, quantity)}
+            disabled={!isOpen}
           >
             Add to cart
           </button>
+          {!isOpen && <p className="closed-message">Ordering is disabled because the restaurant is closed.</p>}
         </div>
       </div>
     </div>
@@ -219,11 +258,29 @@ const RestaurantPage = () => {
   const [currentOrder, setCurrentOrder] = useState(null);
   const [showPaymentReview, setShowPaymentReview] = useState(false);
   const [showCart, setShowCart] = useState(true); // Add state for cart visibility
+  const [restaurant, setRestaurant] = useState(null);
 
   const truncateText = (text, maxLength) => {
     if (!text) return '';
     return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
   };
+
+  useEffect(() => {
+    const fetchRestaurant = async () => {
+      try {
+        const restaurantDoc = await getDoc(doc(db, 'restaurants', restaurantId));
+        if (restaurantDoc.exists()) {
+          setRestaurant(restaurantDoc.data());
+        } else {
+          setError('Restaurant not found.');
+        }
+      } catch (err) {
+        console.error('Error fetching restaurant:', err);
+        setError('Failed to load restaurant.');
+      }
+    };
+    fetchRestaurant();
+  }, [restaurantId]);
 
   useEffect(() => {
     const fetchDishes = async () => {
@@ -322,7 +379,7 @@ const RestaurantPage = () => {
   const handleAddToCart = (dishId, quantity) => {
     setCart(prevCart => {
       const existingItem = prevCart.find(item => item.id === dishId);
-      
+
       if (existingItem) {
         // If item already exists, update the quantity
         return prevCart.map(item =>
@@ -436,6 +493,8 @@ const RestaurantPage = () => {
       ? filteredDishes
       : dishesByCategory[selectedCategory] || [];
 
+  const isOpen = restaurant ? isRestaurantOpen(restaurant.openHours) : false;
+
   if (loading) return <div className="main-content">Loading dishes...</div>;
   if (error)
     return (
@@ -452,6 +511,13 @@ const RestaurantPage = () => {
 
   return (
     <div className="main-content restaurant-page-container">
+      {/* Closed Notice */}
+      {!isOpen && (
+        <div className="closed-notice">
+          <p>The restaurant is closed and is not accepting orders.</p>
+        </div>
+      )}
+
       {/* Search and Category Tabs */}
       <div className="search-category-container">
         <input
@@ -466,9 +532,8 @@ const RestaurantPage = () => {
             <button
               key={category}
               onClick={() => setSelectedCategory(category)}
-              className={`category-tab ${
-                selectedCategory === category ? 'selected' : ''
-              }`}
+              className={`category-tab ${selectedCategory === category ? 'selected' : ''
+                }`}
               aria-pressed={selectedCategory === category}
               type="button"
             >
@@ -511,6 +576,7 @@ const RestaurantPage = () => {
                   className="dish-add-btn"
                   onClick={() => openOverlay(dish.id)}
                   type="button"
+                  disabled={!isOpen}
                 >
                   +
                 </button>
@@ -535,6 +601,7 @@ const RestaurantPage = () => {
           dish={dishInOverlay}
           onClose={closeOverlay}
           onAddToCart={handleAddToCart}
+          isOpen={isOpen}
         />
       )}
 
@@ -545,6 +612,7 @@ const RestaurantPage = () => {
           onRemove={handleRemoveFromCart}
           onCancel={handleCancelOrder}
           onAddOrder={handleReviewPayment}
+          isOpen={isOpen}
         />
       )}
 

@@ -4,6 +4,8 @@ import { db, auth } from '../firebase'; // Added auth
 import { doc, getDoc, collection, query, where, getDocs, orderBy, addDoc, deleteDoc } from 'firebase/firestore'; // Added addDoc, deleteDoc
 import supabase from '../supabase';
 import VideoOverlay from './VideoOverlay';
+import FollowersFollowingOverlay from './FollowersFollowingOverlay'; // Add this import
+import ChatOverlay from './ChatOverlay'; // Add this import
 import '../styles/profile-page.css';
 
 const timeAgo = (date) => {
@@ -31,6 +33,8 @@ const ViewProfilePage = () => {
   const [followingCount, setFollowingCount] = useState(0); // Added for dynamic following count
   const [followersCount, setFollowersCount] = useState(0); // Added for dynamic followers count
   const [totalLikes, setTotalLikes] = useState(0); // Added for dynamic total likes
+  const [showFollowingOverlay, setShowFollowingOverlay] = useState(false); // Add this state
+  const [selectedChatUser, setSelectedChatUser] = useState(null); // Add this state
 
   // Listen to auth state changes
   useEffect(() => {
@@ -129,14 +133,16 @@ const ViewProfilePage = () => {
     fetchFollowersCount();
   }, [uploaderId]);
 
-  // Fetch videos uploaded by user and calculate total likes from interactions
+  // Fetch videos based on active tab
   useEffect(() => {
-    if (!uploaderId) return; // Fixed: Use uploaderId
-    const fetchUserVideos = async () => {
+    if (!uploaderId) return;
+
+    const fetchUploadedVideos = async () => {
+      setLoadingVideos(true);
       try {
         const videosQuery = query(
           collection(db, 'videos'),
-          where('uploaderId', '==', uploaderId), // Fixed: Use uploaderId
+          where('uploaderId', '==', uploaderId),
           orderBy('uploadedAt', 'desc')
         );
         const videosSnapshot = await getDocs(videosQuery);
@@ -144,46 +150,114 @@ const ViewProfilePage = () => {
 
         for (const doc of videosSnapshot.docs) {
           const videoData = doc.data();
-          const { caption, fileName, uploadedAt, views = 0, locked = false } = videoData; // Removed likes from destructuring
-          const videoId = doc.id; // Get the doc ID as videoId
+          const { caption, fileName, uploadedAt, views = 0, locked = false } = videoData;
+          const videoId = doc.id;
 
           const { data: { publicUrl } } = supabase.storage.from('videos').getPublicUrl(fileName);
 
           videosList.push({
-            videoId, // Changed: Use videoId instead of id to match VideoOverlay
+            videoId,
             videoSrc: publicUrl,
             caption: caption || 'Untitled Video',
             timeUploaded: uploadedAt ? timeAgo(uploadedAt.toDate()) : '',
             views,
             locked,
-            uploaderName: dbUser?.displayname || 'Unknown', // Added for VideoOverlay
-            uploaderUsername: dbUser?.username || '@unknown', // Added for VideoOverlay
-            uploaderProfilePic: dbUser?.photoURL || null, // Added for VideoOverlay
+            uploaderName: dbUser?.displayname || 'Unknown',
+            uploaderUsername: dbUser?.username || '@unknown',
+            uploaderProfilePic: dbUser?.photoURL || null,
           });
         }
         setVideos(videosList);
-
-        // Fetch total likes from interactions for these videos
-        if (videosList.length > 0) {
-          const videoIds = videosList.map(v => v.videoId);
-          const likesQuery = query(
-            collection(db, 'interactions'),
-            where('type', '==', 'like'),
-            where('videoId', 'in', videoIds)
-          );
-          const likesSnapshot = await getDocs(likesQuery);
-          setTotalLikes(likesSnapshot.size);
-        } else {
-          setTotalLikes(0);
-        }
       } catch (error) {
         console.error('Error fetching videos:', error);
+        setVideos([]);
       } finally {
         setLoadingVideos(false);
       }
     };
-    fetchUserVideos();
-  }, [uploaderId, dbUser]); // Added dbUser dependency for uploader info
+
+    const fetchLikedVideos = async () => {
+      setLoadingVideos(true);
+      try {
+        // Fetch interactions of type 'like' by uploaderId
+        const likesQuery = query(
+          collection(db, 'interactions'),
+          where('userId', '==', uploaderId),
+          where('type', '==', 'like')
+        );
+        const likesSnapshot = await getDocs(likesQuery);
+        const likedVideoIds = likesSnapshot.docs.map(doc => doc.data().videoId);
+
+        if (likedVideoIds.length === 0) {
+          setVideos([]);
+          setLoadingVideos(false);
+          return;
+        }
+
+        // Firestore 'in' queries are limited to 10, so chunk accordingly
+        const chunkSize = 10;
+        const usersSnapshot = await getDocs(collection(db, 'users'));
+        const likedVideosList = [];
+
+        for (let i = 0; i < likedVideoIds.length; i += chunkSize) {
+          const chunk = likedVideoIds.slice(i, i + chunkSize);
+
+          const videosQuery = query(
+            collection(db, 'videos'),
+            where('__name__', 'in', chunk)
+          );
+          const videosSnapshot = await getDocs(videosQuery);
+
+          for (const docSnap of videosSnapshot.docs) {
+            const videoData = docSnap.data();
+            const {
+              uploaderId: vidUploaderId,
+              caption,
+              fileName,
+              uploadedAt,
+              views = 0,
+              locked = false,
+            } = videoData;
+            const videoId = docSnap.id;
+
+            const uploaderDoc = usersSnapshot.docs.find((d) => d.id === vidUploaderId);
+            const uploader = uploaderDoc
+              ? uploaderDoc.data()
+              : { displayname: 'Unknown', username: '@unknown', photoURL: null };
+
+            const {
+              data: { publicUrl },
+            } = supabase.storage.from('videos').getPublicUrl(fileName);
+
+            likedVideosList.push({
+              videoId,
+              videoSrc: publicUrl,
+              caption: caption || 'Untitled Video',
+              uploaderName: uploader.displayname || 'Unknown',
+              uploaderUsername: uploader.username || '@unknown',
+              uploaderProfilePic: uploader.photoURL || null,
+              timeUploaded: uploadedAt ? timeAgo(uploadedAt.toDate()) : '',
+              views,
+              locked,
+            });
+          }
+        }
+
+        setVideos(likedVideosList);
+      } catch (error) {
+        console.error('Error fetching liked videos:', error);
+        setVideos([]);
+      } finally {
+        setLoadingVideos(false);
+      }
+    };
+
+    if (activeTab === 'Videos') {
+      fetchUploadedVideos();
+    } else if (activeTab === 'Liked') {
+      fetchLikedVideos();
+    }
+  }, [uploaderId, activeTab, dbUser]);
 
   const handleVideoClick = (video) => setSelectedVideo(video);
   const closeOverlay = () => setSelectedVideo(null);
@@ -224,12 +298,21 @@ const ViewProfilePage = () => {
     }
   };
 
-  // Determine button label
+  // Determine button label and color
   const getButtonLabel = () => {
     if (isFollowing && isFollowedBy) return 'Friends';
     if (isFollowing) return 'Followed';
     if (isFollowedBy) return 'Follow Back';
     return 'Follow';
+  };
+
+  const getFollowButtonStyle = () => {
+    if (isFollowing && isFollowedBy) {
+      return { backgroundColor: '#666' }; // Gray for friends
+    } else if (isFollowing || isFollowedBy) {
+      return { backgroundColor: '#fe2c55' }; // Pink for follow or follow back
+    }
+    return { backgroundColor: '#ff004f' }; // Default pink
   };
 
   if (!dbUser) {
@@ -239,6 +322,7 @@ const ViewProfilePage = () => {
   const displayname = dbUser.displayname || 'Anonymous User';
   const usernameTag = dbUser.username || 'anonymous';
   const bio = dbUser.bio || '';
+  const isMutual = isFollowing && isFollowedBy;
 
   return (
     <div className="profile-page-container" style={{ backgroundColor: 'black', color: 'white' }}>
@@ -258,15 +342,19 @@ const ViewProfilePage = () => {
           </div>
 
           <div className="profile-buttons">
-            <button className="btn-follow" onClick={handleFollowToggle}>{getButtonLabel()}</button> {/* Updated onClick and text */}
-            <button className="btn-message">Message</button>
-            <button className="btn-add-user" aria-label="Add User">➕</button>
-            <button className="btn-share" aria-label="Share">↗️</button>
-            <button className="btn-more" aria-label="More Options">...</button>
+            <button className="btn-follow" onClick={handleFollowToggle} style={getFollowButtonStyle()}>{getButtonLabel()}</button>
+            {isMutual && (
+              <button className="btn-message" onClick={() => setSelectedChatUser({ id: uploaderId, displayName: displayname, username: usernameTag, photoURL: dbUser.photoURL })}>Message</button>
+            )}
           </div>
 
           <div className="profile-stats">
-            <span><strong>{followingCount}</strong> Following</span>
+            <span
+              onClick={() => setShowFollowingOverlay(true)}
+              style={{ cursor: 'pointer' }}
+            >
+              <strong>{followingCount}</strong> Following
+            </span>
             <span><strong>{followersCount}</strong> Followers</span>
             <span><strong>{totalLikes}</strong> Likes</span>
           </div>
@@ -276,48 +364,61 @@ const ViewProfilePage = () => {
       </div>
 
       <nav className="profile-tabs">
-        {['Videos', 'Reposts', 'Liked'].map(tab => (
+        {['Videos', 'Liked'].map(tab => (
           <button
             key={tab}
             className={`tab-item${activeTab === tab ? ' active' : ''}`}
             onClick={() => setActiveTab(tab)}
             aria-current={activeTab === tab}
           >
-            {tab} {/* Add icons if needed */}
+            {tab}
           </button>
         ))}
       </nav>
 
-      {activeTab === 'Videos' && (
+      {loadingVideos ? (
+        <p>Loading videos...</p>
+      ) : videos.length === 0 ? (
+        <p>{activeTab === 'Videos' ? 'No videos uploaded yet.' : 'No liked videos found.'}</p>
+      ) : (
         <section className="videos-grid">
-          {loadingVideos ? (
-            <p>Loading videos...</p>
-          ) : videos.length === 0 ? (
-            <p>No videos uploaded yet.</p>
-          ) : (
-            videos.map(video => (
+          {videos.map(video => (
+            <div
+              key={video.videoId}
+              className="video-card"
+              title={video.caption}
+              onClick={() => handleVideoClick(video)}
+            >
               <div
-                key={video.videoId} // Changed: Use videoId as key
-                className="video-card"
-                title={video.caption}
-                onClick={() => handleVideoClick(video)}
+                className="video-thumbnail"
+                style={{ backgroundImage: `url(${video.videoSrc})` }}
               >
-                <div
-                  className="video-thumbnail"
-                  style={{ backgroundImage: `url(${video.videoSrc})` }}
-                >
-                  <div className="video-views">▶ {video.views}</div>
-                  {video.locked && <div className="video-lock">🔒</div>}
-                </div>
-
-                <div className="video-caption">{video.caption}</div>
+                <div className="video-views">▶ {video.views}</div>
+                {video.locked && <div className="video-lock">🔒</div>}
               </div>
-            ))
-          )}
+              <div className="video-caption">{video.caption}</div>
+            </div>
+          ))}
         </section>
       )}
 
       {selectedVideo && <VideoOverlay video={selectedVideo} onClose={closeOverlay} />}
+
+      {showFollowingOverlay && (
+        <FollowersFollowingOverlay
+          isOpen={showFollowingOverlay}
+          onClose={() => setShowFollowingOverlay(false)}
+          profileUserId={uploaderId}
+        />
+      )}
+
+      {selectedChatUser && (
+        <ChatOverlay
+          currentUser={currentUser}
+          chatUser={selectedChatUser}
+          onClose={() => setSelectedChatUser(null)}
+        />
+      )}
     </div>
   );
 };

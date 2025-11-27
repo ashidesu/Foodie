@@ -14,7 +14,8 @@
 
 /* Modal container matching dark color scheme */
 .overlay-content-profile {
-  width: 650px;
+  width: 90%; /* Changed to 90% to prevent full screen width on all screens */
+  max-width: 650px; /* Added max-width to cap at 650px on larger screens */
   background-color: #1a1a1a;
   color: #e0e0e0;
   padding: 40px 32px;
@@ -24,6 +25,7 @@
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   max-height: 90vh;
   overflow-y: auto;
+  scrollbar-width: none;
 }
 
 /* Title */
@@ -218,8 +220,8 @@ textarea::placeholder {
 /* Responsive for smaller screens */
 @media (max-width: 460px) {
   .overlay-content-profile {
-    width: 100%;
-    height: 100%;
+    width: 95%; /* Adjusted to 95% for even smaller screens if needed, but main rule now handles responsiveness */
+    height: auto;
     border-radius: 0;
     padding: 20px;
   }
@@ -231,4 +233,17 @@ textarea::placeholder {
     width: 80px;
     height: 80px;
   }
+}
+/* Error styling for inputs */
+input.error {
+  border-color: #ff4444; /* Red border for error */
+  box-shadow: 0 0 0 1px #ff4444; /* Optional: add a subtle shadow */
+}
+
+/* Error text */
+.error-text {
+  color: #ff4444;
+  font-size: 13px;
+  margin-top: 4px;
+  line-height: 1.4;
 }

@@ -157,10 +157,14 @@ const VideoSidebar = ({ videoId }) => {
     fetchData();
   }, [videoId, currentUser]);
 
-  // Toggle like (unchanged)
+  // Toggle like (modified to disable for anonymous users)
   const handleLike = async () => {
     if (!currentUser) {
       alert('You must be logged in to like videos.');
+      return;
+    }
+    if (currentUser.isAnonymous) {
+      alert('This feature is not available for guest users.');
       return;
     }
 
@@ -194,8 +198,18 @@ const VideoSidebar = ({ videoId }) => {
     }
   };
 
-  // Open comment overlay (unchanged)
+  // Open comment overlay (modified to disable for anonymous users)
   const handleOpenCommentOverlay = () => {
+    console.log('handleOpenCommentOverlay called');  // DEBUG: Added for troubleshooting
+    if (!currentUser) {
+      alert('You must be logged in to comment.');
+      return;
+    }
+    if (currentUser.isAnonymous) {
+      alert('This feature is not available for guest users.');
+      return;
+    }
+    console.log('Setting isCommentOverlayOpen to true');  // DEBUG: Added for troubleshooting
     setIsCommentOverlayOpen(true);
   };
 
@@ -204,8 +218,16 @@ const VideoSidebar = ({ videoId }) => {
     setIsCommentOverlayOpen(false);
   };
 
-  // NEW: Open report overlay
+  // NEW: Open report overlay (modified to disable for anonymous users)
   const handleOpenReportOverlay = () => {
+    if (!currentUser) {
+      alert('You must be logged in to report.');
+      return;
+    }
+    if (currentUser.isAnonymous) {
+      alert('This feature is not available for guest users.');
+      return;
+    }
     setIsReportOverlayOpen(true);
   };
 
@@ -214,8 +236,16 @@ const VideoSidebar = ({ videoId }) => {
     setIsReportOverlayOpen(false);
   };
 
-  // NEW: Submit report
+  // NEW: Submit report (modified to disable for anonymous users)
   const handleSubmitReport = async (reportData) => {
+    if (!currentUser) {
+      alert('You must be logged in to report.');
+      return;
+    }
+    if (currentUser.isAnonymous) {
+      alert('This feature is not available for guest users.');
+      return;
+    }
     try {
       const reportsRef = collection(db, 'reports');
       await addDoc(reportsRef, reportData);
@@ -225,14 +255,27 @@ const VideoSidebar = ({ videoId }) => {
     }
   };
 
-  // Navigate to uploader's profile on profile icon click (unchanged)
+  // Navigate to uploader's profile on profile icon click (modified to disable for anonymous users)
   const handleGoToProfile = () => {
+    if (!currentUser) {
+      alert('You must be logged in to view profiles.');
+      return;
+    }
+    if (currentUser.isAnonymous) {
+      alert('This feature is not available for guest users.');
+      return;
+    }
     if (uploaderId) {
       navigate(`/viewProfile/${uploaderId}`);
     } else {
       console.warn('Cannot navigate: uploaderId is null');
     }
   };
+
+  // DEBUG: Added useEffect to log isCommentOverlayOpen changes
+  useEffect(() => {
+    console.log('isCommentOverlayOpen changed to:', isCommentOverlayOpen);
+  }, [isCommentOverlayOpen]);
 
   return (
     <>

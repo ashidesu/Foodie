@@ -118,9 +118,8 @@
   user-select: none;
 }
 
-/* Follow button - bright pink */
+/* Follow button - color handled via inline styles in component */
 .btn-follow {
-  background-color: #ff004f;
   border: none;
   padding: 10px 26px;
   border-radius: 6px;
@@ -134,12 +133,33 @@
 
 .btn-follow:hover,
 .btn-follow:focus {
-  background-color: #e60042;
+  opacity: 0.8;
   outline: none;
 }
 
-/* Other buttons - message, add user, share, options */
-.btn-message,
+/* Message button - white background */
+.btn-message {
+  background-color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 6px;
+  color: black; /* Text color for contrast */
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.btn-message:hover,
+.btn-message:focus {
+  background-color: #e8e8e8;
+  outline: none;
+}
+
+/* Other buttons - add user, share, options (if needed, but removed in component) */
 .btn-add-user,
 .btn-share,
 .btn-more {
@@ -173,11 +193,9 @@
   margin-right: 6px;
 }
 
-.btn-message:hover,
 .btn-add-user:hover,
 .btn-share:hover,
 .btn-more:hover,
-.btn-message:focus,
 .btn-add-user:focus,
 .btn-share:focus,
 .btn-more:focus {

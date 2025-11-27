@@ -1,0 +1,196 @@
+/* Overlay backdrop */
+.overlay-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Overlay container */
+.overlay-container-profile {
+  background-color: #1a1a1a; /* Dark background */
+  width: 600px;
+  border-radius: 8px;
+  padding: 40px 10px;
+  color: #e0e0e0; /* Light text on dark */
+  display: flex;
+  flex-direction: column;
+  max-height: 80vh;
+  align-items: center;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  height: 800px;
+}
+
+/* Header */
+.overlay-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #333; /* Dark border */
+  padding-bottom: 16px;
+  width: 100%;
+}
+
+.overlay-header h3 {
+  font-weight: 700;
+  font-size: 24px;
+  color: #ffffff; /* White heading */
+}
+
+.close-button {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: #ffffff; /* White */
+  cursor: pointer;
+  transition: opacity 0.3s;
+}
+
+.close-button:hover {
+  opacity: 0.7;
+}
+
+/* Tabs */
+.overlay-tabs {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  width: 100%;
+  justify-content: center;
+}
+
+.overlay-tab {
+  flex: 1; /* Make tabs equal width */
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  color: #cccccc; /* Muted text */
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  border-bottom: 2px solid transparent;
+  transition: color 0.3s, border-color 0.3s, background-color 0.3s;
+  border-radius: 4px;
+  text-align: center; /* Center text */
+}
+
+.overlay-tab.active {
+  color: #fe2c55; /* Pink accent */
+  border-bottom-color: #fe2c55;
+}
+
+.overlay-tab:hover {
+  background-color: #2a2a2a; /* Dark hover */
+  color: #fe2c55; /* Pink on hover */
+}
+
+/* Scrollable content */
+.overlay-content-profile {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  width: 100%;
+  background-color: #1a1a1a; /* Match container background */
+}
+
+/* User list */
+.user-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+}
+
+.user-item {
+  display: flex;
+  align-items: center;
+  padding: 6px 0;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #333; /* Dark border */
+  transition: background-color 0.3s;
+  height: 100px;
+  background-color: #1a1a1a;
+}
+.user-info,
+.user-item:hover {
+  background-color: #2a2a2a; /* Dark hover */
+}
+
+.user-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 16px;
+  background: #2a2a2a; /* Dark background */
+}
+
+.user-info {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: #1a1a1a;
+}
+
+.user-displayname {
+  font-weight: 600;
+  font-size: 16px;
+  color: #ffffff; /* White */
+}
+
+.user-username {
+  font-size: 14px;
+  color: #cccccc; /* Muted */
+}
+
+.user-action-button {
+  background-color: #2a2a2a; /* Dark */
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  color: #ffffff; /* White */
+  font-weight: 600;
+  opacity: 0.8;
+  cursor: default;
+  user-select: none;
+  transition: background-color 0.3s;
+}
+
+.user-action-button.following,
+.user-action-button.follower,
+.user-action-button.mutuals {
+  margin-right: 20px;
+}
+
+/* Specific button colors - all using pink and dark variants */
+.user-action-button.following {
+  background-color: #fe2c55; /* Pink */
+}
+
+.user-action-button.follower {
+  background-color: #fe2c55; /* Darker pink */
+}
+
+.user-action-button.mutuals {
+  background-color: white; /* Even darker pink */
+  color:black;
+}
+
+.mutual-label {
+  font-size: 12px;
+  color: #fe2c55; /* Pink color */
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.user-item img {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-left: 20px;
+}

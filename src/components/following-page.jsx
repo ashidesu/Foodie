@@ -12,6 +12,7 @@ import {
 } from 'firebase/firestore';
 import supabase from '../supabase';
 import VideoSidebar from './VideoSidebar';
+import { Navigate } from 'react-router-dom';  // Add this import
 import '../styles/feed.css';
 
 // Helper function to calculate "time ago"
@@ -39,6 +40,12 @@ const chunkArray = (arr, size) => {
 const FollowedVideosFeed = () => {
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hasFollowedAccounts, setHasFollowedAccounts] = useState(false);
+
+  // Check if user is logged in; if not, redirect to login
+  if (!auth.currentUser) {
+    return <Navigate to="/login" />;
+  }
 
   useEffect(() => {
     const fetchFollowedVideos = async () => {
@@ -47,6 +54,7 @@ const FollowedVideosFeed = () => {
         const userId = auth.currentUser?.uid;
         if (!userId) {
           setVideos([]);
+          setHasFollowedAccounts(false);
           setLoading(false);
           return;
         }
@@ -59,9 +67,12 @@ const FollowedVideosFeed = () => {
 
         if (followedUserIds.length === 0) {
           setVideos([]);
+          setHasFollowedAccounts(false);
           setLoading(false);
           return;
         }
+
+        setHasFollowedAccounts(true);
 
         // 2. Fetch videos uploaded by followed users
         let videosList = [];
@@ -118,7 +129,8 @@ const FollowedVideosFeed = () => {
   }, []);
 
   if (loading) return <div>Loading followed videos...</div>;
-  if (!videos.length) return <div className = "no-following">No videos uploaded by followed accounts.</div>;
+  if (!hasFollowedAccounts) return <div className="no-following">No followed accounts.</div>;
+  if (!videos.length) return <div className="no-following">No videos uploaded by followed accounts.</div>;
 
   return (
     <main className="main-content">
@@ -134,6 +146,9 @@ const VideoBox = ({ video }) => {
   const [isManuallyPaused, setIsManuallyPaused] = useState(false);
   const [hasViewed, setHasViewed] = useState(false);
   const [userHasInteracted, setUserHasInteracted] = useState(false);
+  const [volume, setVolume] = useState(0.5); // Start at 50% volume
+  const [previousVolume, setPreviousVolume] = useState(0.5);
+  const [isVolumeHovered, setIsVolumeHovered] = useState(false);
   const videoRef = useRef(null);
 
   useEffect(() => {
@@ -211,6 +226,57 @@ const VideoBox = ({ video }) => {
     }
   };
 
+  const handleVolumeChange = (e) => {
+    const val = parseFloat(e.target.value);
+    setVolume(val);
+    if (videoRef.current) {
+      videoRef.current.volume = val;
+      videoRef.current.muted = val === 0;
+    }
+  };
+
+  const toggleMute = () => {
+    if (volume > 0) {
+      setPreviousVolume(volume);
+      setVolume(0);
+      if (videoRef.current) {
+        videoRef.current.volume = 0;
+        videoRef.current.muted = true;
+      }
+    } else {
+      const newVolume = previousVolume > 0 ? previousVolume : 0.5;
+      setVolume(newVolume);
+      if (videoRef.current) {
+        videoRef.current.volume = newVolume;
+        videoRef.current.muted = false;
+      }
+    }
+  };
+
+  const getVolumeIcon = () => {
+    if (volume === 0) {
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="24" height="24">
+          <path d="M3 9v6h4l5 5V4L7 9H3z" />
+          <line x1="22" y1="9" x2="16" y2="15" stroke="white" strokeWidth="2" />
+          <line x1="16" y1="9" x2="22" y2="15" stroke="white" strokeWidth="2" />
+        </svg>
+      );
+    } else if (volume < 0.5) {
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="24" height="24">
+          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" />
+        </svg>
+      );
+    } else {
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="24" height="24">
+          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+        </svg>
+      );
+    }
+  };
+
   return (
     <div className='videoBox'>
       <div className='videoContainer'>
@@ -219,11 +285,62 @@ const VideoBox = ({ video }) => {
             ref={videoRef}
             preload="auto"
             loop
-            muted
+            muted={volume === 0}
             playsInline
             onClick={togglePlay}
             src={video.videoSrc}
           />
+          {/* Volume Control */}
+          <div
+            className="volume-control"
+            style={{
+              position: 'absolute',
+              top: '10px',
+              left: '10px',
+              zIndex: 10,
+              display: 'flex',
+              alignItems: 'center',
+            }}
+            onMouseEnter={() => setIsVolumeHovered(true)}
+            onMouseLeave={() => setIsVolumeHovered(false)}
+          >
+            <button
+              onClick={toggleMute}
+              style={{
+                background: 'rgba(0, 0, 0, 0.5)',
+                border: 'none',
+                borderRadius: '50%',
+                padding: '8px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              aria-label="Toggle mute"
+            >
+              {getVolumeIcon()}
+            </button>
+            {isVolumeHovered && (
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={volume}
+                onChange={handleVolumeChange}
+                style={{
+                  width: '80px',
+                  height: '4px',
+                  background: 'rgba(255, 255, 255, 0.5)',
+                  borderRadius: '2px',
+                  outline: 'none',
+                  cursor: 'pointer',
+                  marginLeft: '8px',
+                }}
+                aria-label="Volume slider"
+              />
+            )}
+          </div>
           <div className="uploaderDetails">
             <p className="uploaderName">{video.uploaderName}</p>
             <p className="uploaderUsername">{video.caption}</p>

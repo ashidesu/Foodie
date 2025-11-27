@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/order-page.css';
-import { db } from '../firebase'; 
+import { db, auth } from '../firebase';  // Added auth import
 import { collection, getDocs } from 'firebase/firestore';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';  // Added Navigate import
 
 const daysOfWeek = [
   'sunday',
@@ -40,6 +40,29 @@ const isRestaurantOpen = (openHours) => {
 };
 
 const OrderPage = () => {
+  // Check if user is logged in; if not, redirect to login
+  if (!auth.currentUser) {
+    return <Navigate to="/login" />;
+  }
+
+  // If user is anonymous, show message with login button
+  if (auth.currentUser.isAnonymous) {
+    const navigate = useNavigate();
+    return (
+      <div className="order-page">
+        <div className="anonymous-message">
+          <p>This feature is not available for anonymous users.</p>
+          <button
+            className="login-button"
+            onClick={() => navigate('/login')}
+          >
+            Log In to Access
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

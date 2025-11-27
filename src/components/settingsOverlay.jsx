@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signOut, onAuthStateChanged, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import { signOut, onAuthStateChanged, updatePassword, reauthenticateWithCredential, EmailAuthProvider, linkWithCredential } from 'firebase/auth';
 import { getFirestore, doc, getDoc, updateDoc, addDoc, collection } from 'firebase/firestore';
 import { auth } from '../firebase'; // Adjust path if needed
 import '../styles/settings.css';
@@ -21,6 +21,7 @@ const SettingsOverlay = ({ isOpen, onClose }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [isGoogleSignIn, setIsGoogleSignIn] = useState(false); // New state to check Google sign-in
+  const [hasPasswordProvider, setHasPasswordProvider] = useState(false); // New state to check if user has password provider
 
   const db = getFirestore();
 
@@ -29,6 +30,7 @@ const SettingsOverlay = ({ isOpen, onClose }) => {
       if (currentUser) {
         setUser(currentUser);
         setIsGoogleSignIn(currentUser.providerData.some(provider => provider.providerId === 'google.com'));
+        setHasPasswordProvider(currentUser.providerData.some(provider => provider.providerId === 'password'));
         // Fetch user data from Firestore
         const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
         if (userDoc.exists()) {
@@ -56,6 +58,7 @@ const SettingsOverlay = ({ isOpen, onClose }) => {
         setPrivateAccount(false);
         setAllowBrowserNotifications(false);
         setIsGoogleSignIn(false);
+        setHasPasswordProvider(false);
       }
       setLoading(false);
     });
@@ -89,6 +92,10 @@ const SettingsOverlay = ({ isOpen, onClose }) => {
   // Handle password change submission
   const handlePasswordChangeSubmit = async (e) => {
     e.preventDefault();
+    if (!user) {
+      setPasswordError('You must be logged in.');
+      return;
+    }
     if (newPassword !== confirmPassword) {
       setPasswordError('New passwords do not match.');
       return;
@@ -98,13 +105,14 @@ const SettingsOverlay = ({ isOpen, onClose }) => {
       return;
     }
     try {
-      if (isGoogleSignIn) {
-        // For Google sign-in users, link email/password provider
+      if (!hasPasswordProvider) {
+        // For users without password provider (e.g., Google sign-in), link email/password provider
         const credential = EmailAuthProvider.credential(user.email, newPassword);
-        await user.linkWithCredential(credential);
+        await linkWithCredential(user, credential);
+        setHasPasswordProvider(true); // Update state after linking
         alert('Password set successfully! You can now log in with email and password.');
       } else {
-        // For email/password users, reauthenticate and update
+        // For users with password provider, reauthenticate and update
         const credential = EmailAuthProvider.credential(user.email, currentPassword);
         await reauthenticateWithCredential(user, credential);
         await updatePassword(user, newPassword);
@@ -177,7 +185,7 @@ const SettingsOverlay = ({ isOpen, onClose }) => {
   };
 
   const handleGoToBusinessSite = () => {
-    navigate('/business');
+    window.location.href = 'https://foodie-admin-delta.vercel.app/'; // Adjust URL as needed
     onClose();
   };
 
@@ -206,16 +214,16 @@ const SettingsOverlay = ({ isOpen, onClose }) => {
               <strong>Business Account</strong>
               <p className="description small-margin">
                 {business ? 'Your account is set to business. Access your business site.' : 
-                 applicationStatus === 'pending' ? 'Your application is pending review.' : 
+                 applicationActive ? 'Your application is under review.' : 
                  'Switch your account to a business account for more features.'}
               </p>
             </div>
             {business ? (
               <button className="action-button-text" onClick={handleGoToBusinessSite}>Go to site</button>
-            ) : applicationStatus === 'pending' ? (
+            ) : applicationActive ? (
               <span className="applied-text">Applied</span>
             ) : (
-              <button className="action-button-text" onClick={handleSendApplication}>Send application</button>
+              <button className="action-button-text" onClick={handleSendApplication}>apply</button>
             )}
           </div>
 
@@ -228,7 +236,7 @@ const SettingsOverlay = ({ isOpen, onClose }) => {
           {showChangePasswordForm && (
             <div className="setting-item">
               <form onSubmit={handlePasswordChangeSubmit}>
-                {!isGoogleSignIn && (
+                {hasPasswordProvider && (
                   <div className="form-group">
                     <label htmlFor="currentPassword">Current Password</label>
                     <input
@@ -241,7 +249,7 @@ const SettingsOverlay = ({ isOpen, onClose }) => {
                   </div>
                 )}
                 <div className="form-group">
-                  <label htmlFor="newPassword">{isGoogleSignIn ? 'Set Password' : 'New Password'}</label>
+                  <label htmlFor="newPassword">{hasPasswordProvider ? 'New Password' : 'Set Password'}</label>
                   <input
                     type="password"
                     id="newPassword"
@@ -251,7 +259,7 @@ const SettingsOverlay = ({ isOpen, onClose }) => {
                   />
                 </div>
                 <div className="form-group">
-                  <label htmlFor="confirmPassword">Confirm {isGoogleSignIn ? 'Password' : 'New Password'}</label>
+                  <label htmlFor="confirmPassword">Confirm {hasPasswordProvider ? 'New Password' : 'Password'}</label>
                   <input
                     type="password"
                     id="confirmPassword"
@@ -261,7 +269,7 @@ const SettingsOverlay = ({ isOpen, onClose }) => {
                   />
                 </div>
                 {passwordError && <p className="error-text">{passwordError}</p>}
-                <button type="submit" className="submit-button">{isGoogleSignIn ? 'Set Password' : 'Update Password'}</button>
+                <button type="submit" className="submit-button">{hasPasswordProvider ? 'Update Password' : 'Set Password'}</button>
                 <button type="button" className="cancel-button" onClick={() => setShowChangePasswordForm(false)}>Cancel</button>
               </form>
             </div>

@@ -4,7 +4,10 @@ import { getAuth, signOut } from 'firebase/auth';
 import '../styles/left-sidebar.css';
 
 const LeftSidebar = () => {
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [selectedIndex, setSelectedIndex] = useState(() => {
+    const savedIndex = localStorage.getItem('selectedSidebarIndex');
+    return savedIndex ? parseInt(savedIndex, 10) : 0;
+  });
   const location = useLocation();
   const navigate = useNavigate();
   const auth = getAuth();
@@ -24,6 +27,7 @@ const LeftSidebar = () => {
       setSelectedIndex(currentIndex);
       localStorage.setItem('selectedSidebarIndex', currentIndex.toString());
     }
+    // If not found, keep the current selectedIndex
   }, [location.pathname]);
 
   const handleItemClick = (index) => {

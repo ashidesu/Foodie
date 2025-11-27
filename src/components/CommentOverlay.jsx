@@ -61,16 +61,14 @@ const CommentOverlay = ({ videoId, isOpen, onClose }) => {
 
         // Fetch displayNames and photoURLs for each commenter
         const userIds = [...new Set(commentList.map(c => c.userId))];
-        const userPromises = userIds.map(userId => getDoc(doc(db, 'users', userId)));
-        const userDocs = await Promise.all(userPromises);
         const userMap = {};
-        userDocs.forEach((userDoc, index) => {
-          const userId = userIds[index];
+        for (const userId of userIds) {
+          const userDoc = await getDoc(doc(db, 'users', userId));
           if (userDoc.exists()) {
             const userData = userDoc.data();
             userMap[userId] = {
               displayName: userData.displayname || 'Anonymous',
-              photoURL: userData.photoURL || null, // NEW: Fetch photoURL from Firestore
+              photoURL: userData.photoURL || null,
             };
           } else {
             userMap[userId] = {
@@ -78,12 +76,12 @@ const CommentOverlay = ({ videoId, isOpen, onClose }) => {
               photoURL: null,
             };
           }
-        });
+        }
 
         // Attach displayName and photoURL to each comment
         commentList.forEach(comment => {
           comment.displayName = userMap[comment.userId].displayName;
-          comment.photoURL = userMap[comment.userId].photoURL; // NEW: Attach photoURL
+          comment.photoURL = userMap[comment.userId].photoURL;
         });
 
         setComments(commentList);
@@ -131,16 +129,14 @@ const CommentOverlay = ({ videoId, isOpen, onClose }) => {
 
       // Fetch displayNames and photoURLs again
       const userIds = [...new Set(commentList.map(c => c.userId))];
-      const userPromises = userIds.map(userId => getDoc(doc(db, 'users', userId)));
-      const userDocs = await Promise.all(userPromises);
       const userMap = {};
-      userDocs.forEach((userDoc, index) => {
-        const userId = userIds[index];
+      for (const userId of userIds) {
+        const userDoc = await getDoc(doc(db, 'users', userId));
         if (userDoc.exists()) {
           const userData = userDoc.data();
           userMap[userId] = {
             displayName: userData.displayname || 'Anonymous',
-            photoURL: userData.photoURL || null, // NEW: Fetch photoURL
+            photoURL: userData.photoURL || null,
           };
         } else {
           userMap[userId] = {
@@ -148,11 +144,11 @@ const CommentOverlay = ({ videoId, isOpen, onClose }) => {
             photoURL: null,
           };
         }
-      });
+      }
 
       commentList.forEach(comment => {
         comment.displayName = userMap[comment.userId].displayName;
-        comment.photoURL = userMap[comment.userId].photoURL; // NEW: Attach photoURL
+        comment.photoURL = userMap[comment.userId].photoURL;
       });
 
       setComments(commentList);
@@ -176,7 +172,7 @@ const CommentOverlay = ({ videoId, isOpen, onClose }) => {
           {comments.length ? comments.map(comment => (
             <div key={comment.id} className="commentBox">
               <img 
-                src={comment.photoURL || '/default-profile.png'}  // UPDATED: Use comment.photoURL from Supabase via Firestore
+                src={comment.photoURL || '/default-profile.png'}
                 alt="User profile" 
                 className="commentProfilePic"
                 onError={e => { e.target.src = '/default-profile.png'; }}

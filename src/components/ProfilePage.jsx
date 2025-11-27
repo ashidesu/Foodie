@@ -13,6 +13,7 @@ import {
 import supabase from '../supabase';
 import VideoOverlay from './VideoOverlay';
 import EditProfileOverlay from './EditProfileOverlay';
+import FollowersFollowingOverlay from './FollowersFollowingOverlay'; // Add this import
 import '../styles/profile-page.css';
 
 const timeAgo = (date) => {
@@ -99,6 +100,7 @@ const ProfilePage = () => {
   const [followersCount, setFollowersCount] = useState(0);
   const [totalLikes, setTotalLikes] = useState(0);
   const [showEditOverlay, setShowEditOverlay] = useState(false);
+  const [showFollowingOverlay, setShowFollowingOverlay] = useState(false); // Add this state
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -379,7 +381,10 @@ const ProfilePage = () => {
           </div>
 
           <div className="profile-stats">
-            <span>
+            <span
+              onClick={() => setShowFollowingOverlay(true)}
+              style={{ cursor: 'pointer' }}
+            >
               <strong>{followingCount}</strong> Following
             </span>
             <span>
@@ -440,6 +445,14 @@ const ProfilePage = () => {
           dbUser={dbUser}
           onClose={() => setShowEditOverlay(false)}
           onUpdate={handleProfileUpdate}
+        />
+      )}
+
+      {showFollowingOverlay && (
+        <FollowersFollowingOverlay
+          isOpen={showFollowingOverlay}
+          onClose={() => setShowFollowingOverlay(false)}
+          profileUserId={user.uid}  // Added this prop to fix the loading issue
         />
       )}
     </div>

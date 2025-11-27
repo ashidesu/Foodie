@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { db } from '../firebase';
+import { db, auth } from '../firebase';  // Added auth import
 import { collection, query, orderBy, limit, getDocs, where } from 'firebase/firestore';
 import supabase from '../supabase';
 import VideoOverlay from './VideoOverlay';
+import { Navigate } from 'react-router-dom';  // Added Navigate import
 import '../styles/discover-page.css';
 
 const timeAgo = (date) => {
@@ -56,6 +57,32 @@ const generateThumbnail = (videoUrl) => {
 };
 
 const DiscoverPage = () => {
+  // Check if user is logged in; if not, redirect to login
+  if (!auth.currentUser) {
+    return <Navigate to="/login" />;
+  }
+
+  // If user is anonymous, show message with login button
+  if (auth.currentUser.isAnonymous) {
+    const navigate = useNavigate();
+    return (
+      <div className="discover-page">
+        <div className="discover-header">
+          <h1>Discover</h1>
+        </div>
+        <div className="anonymous-message">
+          <p>This feature is not available for anonymous users.</p>
+          <button
+            className="login-button"
+            onClick={() => navigate('/login')}
+          >
+            Log In to Access
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const [videos, setVideos] = useState([]);
   const [videoThumbnails, setVideoThumbnails] = useState({});
   const [loadingVideos, setLoadingVideos] = useState(true);

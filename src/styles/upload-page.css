@@ -3,7 +3,7 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    background-color: #1a1a1a;
+    background-color: #121212;
     overflow-y: auto;
     padding: 20px;
     margin-left: 250px;
@@ -195,4 +195,17 @@
         padding: 10px 32px;
         font-size: 14px;
     }
+}
+
+.anonymous-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 50vh; /* Adjust height as needed */
+  text-align: center;
+}
+.anonymous-message p {
+  margin-bottom: 20px;
+  font-size: 18px;
 }
