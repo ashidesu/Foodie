@@ -4,11 +4,11 @@ import UploadModal from './UploadModal'; // Import the new modal component
 import '../styles/business-application.css';
 // Imports for Firebase (for metadata), Supabase (for storage), and UUID
 import { db, auth } from '../firebase'; // Adjust path if needed (for Firestore and auth)
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid';
 import supabase from '../supabase'; // Assuming Supabase client is configured and exported
 
-// Updated handleApply: Upload files to Supabase Storage and submit metadata to Firestore (styled like UploadPage's handleUpload)
+
 const handleApply = async () => {
   if (!selectedProvince || !selectedCity || !selectedBarangay || !street.trim() ||
     !ownerName.trim() || !sex || !age.trim() || !civilStatus || !birthdate ||
@@ -30,18 +30,18 @@ const handleApply = async () => {
 
     // Upload files to Supabase Storage (adapted from UploadPage's upload logic)
     const uploadPromises = [
-      selfieFile ? supabase.storage.from('media').upload(`${user.uid}/${applicationId}/selfie.jpg`, selfieFile) : Promise.resolve({ data: null }),
-      validIdFile ? supabase.storage.from('media').upload(`${user.uid}/${applicationId}/validId.jpg`, validIdFile) : Promise.resolve({ data: null }),
-      selfieWithIdFile ? supabase.storage.from('media').upload(`${user.uid}/${applicationId}/selfieWithId.jpg`, selfieWithIdFile) : Promise.resolve({ data: null }),
-      displayPhotoFile ? supabase.storage.from('media').upload(`${user.uid}/${applicationId}/display.jpg`, displayPhotoFile) : Promise.resolve({ data: null }),
-      coverPhotoFile ? supabase.storage.from('media').upload(`${user.uid}/${applicationId}/cover.jpg`, coverPhotoFile) : Promise.resolve({ data: null }),
-      ...additionalProofsFiles.map((file, index) => supabase.storage.from('media').upload(`${user.uid}/${applicationId}/additional${index}.${file.name.split('.').pop()}`, file)),
+      selfieFile ? supabase.storage.from('applications').upload(`${applicationId}/selfie.jpg`, selfieFile) : Promise.resolve({ data: null }),
+      validIdFile ? supabase.storage.from('applications').upload(`${applicationId}/validId.jpg`, validIdFile) : Promise.resolve({ data: null }),
+      selfieWithIdFile ? supabase.storage.from('applications').upload(`${applicationId}/selfieWithId.jpg`, selfieWithIdFile) : Promise.resolve({ data: null }),
+      displayPhotoFile ? supabase.storage.from('applications').upload(`${applicationId}/display.jpg`, displayPhotoFile) : Promise.resolve({ data: null }),
+      coverPhotoFile ? supabase.storage.from('applications').upload(`${applicationId}/cover.jpg`, coverPhotoFile) : Promise.resolve({ data: null }),
+      ...additionalProofsFiles.map((file, index) => supabase.storage.from('applications').upload(`${applicationId}/additional${index}.${file.name.split('.').pop()}`, file)),
     ];
 
     const uploadResults = await Promise.all(uploadPromises);
 
     // Extract public URLs from Supabase (assuming public bucket; adjust if private)
-    const getPublicURL = (path) => supabase.storage.from('media').getPublicUrl(path).data.publicUrl;
+    const getPublicURL = (path) => supabase.storage.from('applications').getPublicUrl(path).data.publicUrl;
 
     const [
       selfieResult,
@@ -90,8 +90,11 @@ const handleApply = async () => {
       averageIncome: parseFloat(averageIncome),
       deliveryAreas,
       submittedAt: new Date(),
+      status: "pending",
     });
-
+    console.log('Updating user document for UID:', user.uid);
+    await setDoc(doc(db, 'users', user.uid), { applicationActive: true }, { merge: true });
+    console.log('User document updated successfully');
     alert('Application submitted successfully!');
     setStep(4);
   } catch (error) {
@@ -101,6 +104,8 @@ const handleApply = async () => {
     setIsUploading(false);
   }
 };
+
+
 
 const BusinessApplicationOverlay = ({ isOpen, onClose }) => {
   const [step, setStep] = useState(1);
@@ -379,18 +384,18 @@ const BusinessApplicationOverlay = ({ isOpen, onClose }) => {
 
       // Upload files to Supabase Storage (adapted from UploadPage's upload logic)
       const uploadPromises = [
-        selfieFile ? supabase.storage.from('media').upload(`${applicationId}/selfie.jpg`, selfieFile) : Promise.resolve({ data: null }),
-        validIdFile ? supabase.storage.from('media').upload(`${applicationId}/validId.jpg`, validIdFile) : Promise.resolve({ data: null }),
-        selfieWithIdFile ? supabase.storage.from('media').upload(`${applicationId}/selfieWithId.jpg`, selfieWithIdFile) : Promise.resolve({ data: null }),
-        displayPhotoFile ? supabase.storage.from('media').upload(`${applicationId}/display.jpg`, displayPhotoFile) : Promise.resolve({ data: null }),
-        coverPhotoFile ? supabase.storage.from('media').upload(`${applicationId}/cover.jpg`, coverPhotoFile) : Promise.resolve({ data: null }),
-        ...additionalProofsFiles.map((file, index) => supabase.storage.from('media').upload(`${applicationId}/additional${index}.${file.name.split('.').pop()}`, file)),
+        selfieFile ? supabase.storage.from('applications').upload(`${applicationId}/selfie.jpg`, selfieFile) : Promise.resolve({ data: null }),
+        validIdFile ? supabase.storage.from('applications').upload(`${applicationId}/validId.jpg`, validIdFile) : Promise.resolve({ data: null }),
+        selfieWithIdFile ? supabase.storage.from('applications').upload(`${applicationId}/selfieWithId.jpg`, selfieWithIdFile) : Promise.resolve({ data: null }),
+        displayPhotoFile ? supabase.storage.from('applications').upload(`${applicationId}/display.jpg`, displayPhotoFile) : Promise.resolve({ data: null }),
+        coverPhotoFile ? supabase.storage.from('applications').upload(`${applicationId}/cover.jpg`, coverPhotoFile) : Promise.resolve({ data: null }),
+        ...additionalProofsFiles.map((file, index) => supabase.storage.from('applications').upload(`${applicationId}/additional${index}.${file.name.split('.').pop()}`, file)),
       ];
 
       const uploadResults = await Promise.all(uploadPromises);
 
       // Extract public URLs from Supabase (assuming public bucket; adjust if private)
-      const getPublicURL = (path) => supabase.storage.from('media').getPublicUrl(path).data.publicUrl;
+      const getPublicURL = (path) => supabase.storage.from('applications').getPublicUrl(path).data.publicUrl;
 
       const [
         selfieResult,
