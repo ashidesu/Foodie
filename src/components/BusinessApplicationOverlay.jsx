@@ -1,15 +1,117 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Select from 'react-select';
+import UploadModal from './UploadModal'; // Import the new modal component
 import '../styles/business-application.css';
+// Imports for Firebase (for metadata), Supabase (for storage), and UUID
+import { db, auth } from '../firebase'; // Adjust path if needed (for Firestore and auth)
+import { collection, addDoc } from 'firebase/firestore';
+import { v4 as uuidv4 } from 'uuid';
+import supabase from '../supabase'; // Assuming Supabase client is configured and exported
+
+// Updated handleApply: Upload files to Supabase Storage and submit metadata to Firestore (styled like UploadPage's handleUpload)
+const handleApply = async () => {
+  if (!selectedProvince || !selectedCity || !selectedBarangay || !street.trim() ||
+    !ownerName.trim() || !sex || !age.trim() || !civilStatus || !birthdate ||
+    !selfieFile || !validIdFile || !selfieWithIdFile || !phone.trim() ||
+    !restaurantName.trim() || !averageIncome.trim() || !displayPhotoFile || !coverPhotoFile) {
+    alert('Please fill in all required fields and upload all required files');
+    return;
+  }
+  const user = auth.currentUser;
+  if (!user) {
+    alert('You must be logged in to submit');
+    return;
+  }
+
+  setIsUploading(true);
+
+  try {
+    const applicationId = uuidv4();
+
+    // Upload files to Supabase Storage (adapted from UploadPage's upload logic)
+    const uploadPromises = [
+      selfieFile ? supabase.storage.from('media').upload(`${user.uid}/${applicationId}/selfie.jpg`, selfieFile) : Promise.resolve({ data: null }),
+      validIdFile ? supabase.storage.from('media').upload(`${user.uid}/${applicationId}/validId.jpg`, validIdFile) : Promise.resolve({ data: null }),
+      selfieWithIdFile ? supabase.storage.from('media').upload(`${user.uid}/${applicationId}/selfieWithId.jpg`, selfieWithIdFile) : Promise.resolve({ data: null }),
+      displayPhotoFile ? supabase.storage.from('media').upload(`${user.uid}/${applicationId}/display.jpg`, displayPhotoFile) : Promise.resolve({ data: null }),
+      coverPhotoFile ? supabase.storage.from('media').upload(`${user.uid}/${applicationId}/cover.jpg`, coverPhotoFile) : Promise.resolve({ data: null }),
+      ...additionalProofsFiles.map((file, index) => supabase.storage.from('media').upload(`${user.uid}/${applicationId}/additional${index}.${file.name.split('.').pop()}`, file)),
+    ];
+
+    const uploadResults = await Promise.all(uploadPromises);
+
+    // Extract public URLs from Supabase (assuming public bucket; adjust if private)
+    const getPublicURL = (path) => supabase.storage.from('media').getPublicUrl(path).data.publicUrl;
+
+    const [
+      selfieResult,
+      validIdResult,
+      selfieWithIdResult,
+      displayResult,
+      coverResult,
+      ...additionalResults
+    ] = uploadResults;
+
+    const selfieURL = selfieResult.data ? getPublicURL(selfieResult.data.path) : '';
+    const validIdURL = validIdResult.data ? getPublicURL(validIdResult.data.path) : '';
+    const selfieWithValidIdURL = selfieWithIdResult.data ? getPublicURL(selfieWithIdResult.data.path) : '';
+    const displayURL = displayResult.data ? getPublicURL(displayResult.data.path) : '';
+    const coverURL = coverResult.data ? getPublicURL(coverResult.data.path) : '';
+    const additionalURLs = additionalResults.map(result => result.data ? getPublicURL(result.data.path) : '');
+
+    // Store metadata in Firebase Firestore (like UploadPage stores in Firestore)
+    await addDoc(collection(db, 'applications'), {
+      id: applicationId,
+      uploaderId: user.uid,
+      address: {
+        street,
+        barangay: selectedBarangay.value,
+        city: selectedCity.value,
+        province: selectedProvince.value,
+        region: selectedRegion,
+      },
+      fullName: ownerName,
+      sex,
+      civilStatus,
+      birthdate,
+      nationality,
+      occupation,
+      photoURLs: {
+        selfieURL,
+        validIdURL,
+        selfieWithValidIdURL,
+        displayURL,
+        coverURL,
+      },
+      additionalFileURLs: additionalURLs,
+      businessHours: openHours,
+      restaurantName,
+      phone,
+      averageIncome: parseFloat(averageIncome),
+      deliveryAreas,
+      submittedAt: new Date(),
+    });
+
+    alert('Application submitted successfully!');
+    setStep(4);
+  } catch (error) {
+    console.error('Submission failed:', error);
+    alert('Submission failed. Please try again.');
+  } finally {
+    setIsUploading(false);
+  }
+};
 
 const BusinessApplicationOverlay = ({ isOpen, onClose }) => {
   const [step, setStep] = useState(1);
-
+  const [isUploading, setIsUploading] = useState(false);
   // Location selections
   const [selectedProvince, setSelectedProvince] = useState(null);
   const [selectedCity, setSelectedCity] = useState(null);
   const [selectedBarangay, setSelectedBarangay] = useState(null);
+  const [selectedRegion, setSelectedRegion] = useState(''); // Add this line here
   const [street, setStreet] = useState('');
+
 
   // JSON data and loading state
   const [locationData, setLocationData] = useState(null);
@@ -31,7 +133,7 @@ const BusinessApplicationOverlay = ({ isOpen, onClose }) => {
   const [certificationFile, setCertificationFile] = useState(null);
   const [fileError, setFileError] = useState('');
 
-  // Upload modal states
+  // Upload modal states (kept for controlling the modal)
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [currentUploadType, setCurrentUploadType] = useState('');
 
@@ -100,7 +202,6 @@ const BusinessApplicationOverlay = ({ isOpen, onClose }) => {
     fetchLocationData();
   }, []);
 
-
   // Handlers for Select changes
   const handleProvinceChange = (option) => {
     setSelectedProvince(option);
@@ -158,106 +259,14 @@ const BusinessApplicationOverlay = ({ isOpen, onClose }) => {
     setFileError('');
   };
 
-  // Modal handlers
-  const handleTakePhoto = async () => {
-    // Determine which input ref to use (though we'll handle capture differently)
-    const inputRef = currentUploadType === 'selfie'
-      ? selfieRef
-      : currentUploadType === 'valid-id'
-        ? validIdRef
-        : selfieWithIdRef;
-
-    // Close the current modal
-    setShowUploadModal(false);
-
-    // Check if camera is supported and available
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      alert('Camera not supported on this device.');
-      return;
-    }
-
-    try {
-      // Request camera access (front for selfie/selfie-with-id, back for others)
-      const constraints = {
-        video: {
-          facingMode: currentUploadType === 'selfie' || currentUploadType === 'selfie-with-id' ? 'user' : 'environment'
-        }
-      };
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-
-      // Create a popup overlay for the camera
-      const popup = document.createElement('div');
-      popup.className = 'camera-popup';
-      document.body.appendChild(popup);
-
-      // Create a video element to display the stream
-      const video = document.createElement('video');
-      video.className = 'camera-video';
-      video.srcObject = stream;
-      video.play();
-      popup.appendChild(video);
-
-      // Add a capture button
-      const captureButton = document.createElement('button');
-      captureButton.className = 'camera-capture-button';
-      captureButton.textContent = 'Capture Photo';
-      captureButton.onclick = () => {
-        // Create a canvas to capture the image
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0);
-
-        // Convert to blob and create a File
-        canvas.toBlob((blob) => {
-          const file = new File([blob], 'captured-photo.jpg', { type: 'image/jpeg' });
-
-          // Simulate setting the file to the input (this triggers onChange if set)
-          const dataTransfer = new DataTransfer();
-          dataTransfer.items.add(file);
-          inputRef.current.files = dataTransfer.files;
-          inputRef.current.dispatchEvent(new Event('change', { bubbles: true }));
-
-          // Stop the stream and remove popup
-          stream.getTracks().forEach(track => track.stop());
-          document.body.removeChild(popup);
-        }, 'image/jpeg');
-      };
-      popup.appendChild(captureButton);
-
-      // Add a close button
-      const closeButton = document.createElement('button');
-      closeButton.className = 'camera-close-button';
-      closeButton.textContent = 'Close';
-      closeButton.onclick = () => {
-        stream.getTracks().forEach(track => track.stop());
-        document.body.removeChild(popup);
-      };
-      popup.appendChild(closeButton);
-
-    } catch (error) {
-      console.error('Error accessing camera:', error);
-      if (error.name === 'NotReadableError') {
-        alert('Camera is already in use or not accessible. Please close other apps using the camera and try again.');
-      } else if (error.name === 'NotAllowedError') {
-        alert('Camera access denied. Please grant permissions in your browser settings.');
-      } else {
-        alert('No camera detected or an error occurred. Please ensure your device has a camera.');
-      }
-    }
-  };
-
-  const handleUploadFromGallery = () => {
-    const inputRef = currentUploadType === 'selfie' ? selfieRef : currentUploadType === 'valid-id' ? validIdRef : selfieWithIdRef;
-    inputRef.current.removeAttribute('capture');
-    inputRef.current.click();
-    setShowUploadModal(false);
-  };
-
-  const closeModal = () => {
-    setShowUploadModal(false);
-    setCurrentUploadType('');
+  // Helper to get the correct ref based on type
+  const getRefByType = (type) => {
+    if (type === 'selfie') return selfieRef;
+    if (type === 'valid-id') return validIdRef;
+    if (type === 'selfie-with-id') return selfieWithIdRef;
+    if (type === 'display-photo') return displayPhotoRef;
+    if (type === 'cover-photo') return coverPhotoRef;
+    return null;
   };
 
   // Business hours handlers
@@ -348,8 +357,102 @@ const BusinessApplicationOverlay = ({ isOpen, onClose }) => {
     setStep(prev => Math.max(prev - 1, 1));
   };
 
-  const handleApply = () => {
-    setStep(4);
+  // Updated handleApply: Upload files to Supabase Storage and submit metadata to Firestore (styled like UploadPage's handleUpload)
+  const handleApply = async () => {
+    if (!selectedProvince || !selectedCity || !selectedBarangay || !street.trim() ||
+      !ownerName.trim() || !sex || !age.trim() || !civilStatus || !birthdate ||
+      !selfieFile || !validIdFile || !selfieWithIdFile || !phone.trim() ||
+      !restaurantName.trim() || !averageIncome.trim() || !displayPhotoFile || !coverPhotoFile) {
+      alert('Please fill in all required fields and upload all required files');
+      return;
+    }
+    const user = auth.currentUser;
+    if (!user) {
+      alert('You must be logged in to submit');
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const applicationId = uuidv4();
+
+      // Upload files to Supabase Storage (adapted from UploadPage's upload logic)
+      const uploadPromises = [
+        selfieFile ? supabase.storage.from('media').upload(`${applicationId}/selfie.jpg`, selfieFile) : Promise.resolve({ data: null }),
+        validIdFile ? supabase.storage.from('media').upload(`${applicationId}/validId.jpg`, validIdFile) : Promise.resolve({ data: null }),
+        selfieWithIdFile ? supabase.storage.from('media').upload(`${applicationId}/selfieWithId.jpg`, selfieWithIdFile) : Promise.resolve({ data: null }),
+        displayPhotoFile ? supabase.storage.from('media').upload(`${applicationId}/display.jpg`, displayPhotoFile) : Promise.resolve({ data: null }),
+        coverPhotoFile ? supabase.storage.from('media').upload(`${applicationId}/cover.jpg`, coverPhotoFile) : Promise.resolve({ data: null }),
+        ...additionalProofsFiles.map((file, index) => supabase.storage.from('media').upload(`${applicationId}/additional${index}.${file.name.split('.').pop()}`, file)),
+      ];
+
+      const uploadResults = await Promise.all(uploadPromises);
+
+      // Extract public URLs from Supabase (assuming public bucket; adjust if private)
+      const getPublicURL = (path) => supabase.storage.from('media').getPublicUrl(path).data.publicUrl;
+
+      const [
+        selfieResult,
+        validIdResult,
+        selfieWithIdResult,
+        displayResult,
+        coverResult,
+        ...additionalResults
+      ] = uploadResults;
+
+      const selfieURL = selfieResult.data ? getPublicURL(selfieResult.data.path) : '';
+      const validIdURL = validIdResult.data ? getPublicURL(validIdResult.data.path) : '';
+      const selfieWithValidIdURL = selfieWithIdResult.data ? getPublicURL(selfieWithIdResult.data.path) : '';
+      const displayURL = displayResult.data ? getPublicURL(displayResult.data.path) : '';
+      const coverURL = coverResult.data ? getPublicURL(coverResult.data.path) : '';
+      const additionalURLs = additionalResults.map(result => result.data ? getPublicURL(result.data.path) : '');
+
+      // Store metadata in Firebase Firestore (like UploadPage stores in Firestore)
+      await addDoc(collection(db, 'applications'), {
+        id: applicationId,
+        uploaderId: user.uid,
+        address: {
+          street,
+          barangay: selectedBarangay.value,
+          city: selectedCity.value,
+          province: selectedProvince.value,
+          region: selectedRegion,
+        },
+        fullName: ownerName,
+        sex,
+        civilStatus,
+        birthdate,
+        nationality,
+        occupation,
+        photoURLs: {
+          selfieURL,
+          validIdURL,
+          selfieWithValidIdURL,
+          displayURL,
+          coverURL,
+        },
+        additionalFileURLs: additionalURLs,
+        businessHours: openHours,
+        restaurantName,
+        phone,
+        averageIncome: parseFloat(averageIncome),
+        deliveryAreas,
+        submittedAt: new Date(),
+      });
+      console.log('Updating user document for UID:', user.uid);
+      await setDoc(doc(db, 'users', user.uid), { applicationActive: true }, { merge: true });
+      console.log('User document updated successfully');
+
+      alert('Application submitted successfully!');
+      setStep(4);
+    } catch (error) {
+      console.error('Submission failed:', error);
+      alert('Submission failed. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+
   };
 
   // Sorting regions numerically ascending by their keys ("01", "02", ...)
@@ -929,11 +1032,10 @@ const BusinessApplicationOverlay = ({ isOpen, onClose }) => {
               onChange={e => setPhone(e.target.value)}
             />
 
-
             <label htmlFor="display-photo-upload" className="upload-label">
               Restaurant Display Photo: *
             </label>
-            <div className="upload-box" onClick={() => displayPhotoRef.current.click()}>
+            <div className="upload-box" onClick={() => { setCurrentUploadType('display-photo'); setShowUploadModal(true); }}>
               <input
                 ref={displayPhotoRef}
                 id="display-photo-upload"
@@ -992,7 +1094,7 @@ const BusinessApplicationOverlay = ({ isOpen, onClose }) => {
                     <path d="M12 3v18" />
                   </svg>
                   <p>
-                    <u>Click to upload</u> or drag and drop
+                    <u>Click to upload or take photo</u>
                   </p>
                 </>
               )}
@@ -1001,7 +1103,7 @@ const BusinessApplicationOverlay = ({ isOpen, onClose }) => {
             <label htmlFor="cover-photo-upload" className="upload-label">
               Restaurant Cover Photo: *
             </label>
-            <div className="upload-box" onClick={() => coverPhotoRef.current.click()}>
+            <div className="upload-box" onClick={() => { setCurrentUploadType('cover-photo'); setShowUploadModal(true); }}>
               <input
                 ref={coverPhotoRef}
                 id="cover-photo-upload"
@@ -1060,13 +1162,11 @@ const BusinessApplicationOverlay = ({ isOpen, onClose }) => {
                     <path d="M12 3v18" />
                   </svg>
                   <p>
-                    <u>Click to upload</u> or drag and drop
+                    <u>Click to upload or take photo</u>
                   </p>
                 </>
               )}
             </div>
-
-
 
             <label>Delivery Areas (Barangays in {selectedCity?.label || 'Selected City'}):</label>
             <Select
@@ -1076,7 +1176,7 @@ const BusinessApplicationOverlay = ({ isOpen, onClose }) => {
               options={barangayOptions}
               placeholder="Select barangays for delivery..."
               isSearchable
-              styles={selectStyles}  // Uses the existing selectStyles, which now includes multiValue styles
+              styles={selectStyles}
               closeMenuOnSelect={false}
               blurInputOnSelect={false}
             />
@@ -1095,7 +1195,6 @@ const BusinessApplicationOverlay = ({ isOpen, onClose }) => {
             >
               {deliveryAreas.length === barangayOptions.length ? 'Deselect All' : 'Select All'}
             </button>
-            
 
             <label>Business Hours:</label>
             <div className="business-hours-container">
@@ -1159,25 +1258,62 @@ const BusinessApplicationOverlay = ({ isOpen, onClose }) => {
                 onChange={onAdditionalProofsChange}
               />
               {additionalProofsFiles.length > 0 ? (
-                <div>
-                  <p>{additionalProofsFiles.length} file(s) selected</p>
-                  <ul>
-                    {additionalProofsFiles.map((file, index) => (
-                      <li key={index}>
-                        {file.name}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setAdditionalProofsFiles(prev => prev.filter((_, i) => i !== index));
-                          }}
-                          className="remove-file-button"
-                          title="Remove file"
+                <div className="additional-proofs-previews">
+                  {additionalProofsFiles.map((file, index) => (
+                    <div key={index} className="proof-preview-item">
+                      {file.type.startsWith('image/') ? (
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt={`Proof ${index + 1}`}
+                          className="proof-preview-image"
+                        />
+                      ) : (
+                        <div className="proof-preview-pdf">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="48"
+                            height="48"
+                            fill="none"
+                            stroke="#fe2c55"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="feather feather-file-text"
+                            aria-hidden="true"
+                          >
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14,2 14,8 20,8" />
+                            <line x1="16" y1="13" x2="8" y2="13" />
+                            <line x1="16" y1="17" x2="8" y2="17" />
+                            <polyline points="10,9 9,9 8,9" />
+                          </svg>
+                          <p>{file.name}</p>
+                        </div>
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setAdditionalProofsFiles(prev => prev.filter((_, i) => i !== index));
+                        }}
+                        className="remove-image-button"
+                        title="Remove file"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          fill="none"
+                          stroke="#fff"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          viewBox="0 0 24 24"
                         >
-                          Remove
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
+                          <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <>
@@ -1241,8 +1377,8 @@ const BusinessApplicationOverlay = ({ isOpen, onClose }) => {
             </button>
           )}
           {step === 3 && (
-            <button type="button" className="btn-apply" onClick={handleApply}>
-              Submit Application
+            <button type="button" className="btn-apply" onClick={handleApply} disabled={isUploading}>
+              {isUploading ? 'Submitting...' : 'Submit Application'}
             </button>
           )}
           {step === 4 && (
@@ -1254,22 +1390,12 @@ const BusinessApplicationOverlay = ({ isOpen, onClose }) => {
       </div>
 
       {/* Upload Modal */}
-      {showUploadModal && (
-        <div className="upload-modal-overlay" onClick={closeModal}>
-          <div className="upload-modal" onClick={e => e.stopPropagation()}>
-            <h3>Choose Upload Method</h3>
-            <button className="modal-btn take-photo" onClick={handleTakePhoto}>
-              Take Photo
-            </button>
-            <button className="modal-btn upload-gallery" onClick={handleUploadFromGallery}>
-              Upload from Gallery
-            </button>
-            <button className="modal-btn cancel" onClick={closeModal}>
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
+      <UploadModal
+        isOpen={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        inputRef={getRefByType(currentUploadType)}
+        type={currentUploadType}
+      />
     </div>
   );
 };
