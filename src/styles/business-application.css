@@ -1,0 +1,701 @@
+/* Container and layout */
+.business-application-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 32px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  z-index: 1000;
+}
+
+.business-application-content {
+  background: #2a2a2a;
+  border-radius: 12px;
+  width: 640px;
+  max-width: 100%;
+  height: 750px;
+  /* Fixed height to keep consistent */
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  padding: 24px 32px 32px;
+  /* Reduced padding for tighter spacing */
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  /* Reduced gap for closer elements */
+  outline: none;
+  color: #fff;
+}
+
+.ba-step-content {
+  flex: 1;
+  /* Takes up remaining space */
+  overflow-y: auto;
+  /* Allows scrolling if content overflows */
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  /* Reduced gap for tighter spacing */
+}
+
+.ba-navigation {
+  flex-shrink: 0;
+  /* Keeps buttons at the bottom */
+}
+
+/* Header */
+.ba-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.ba-header h2 {
+  font-weight: 700;
+  font-size: 20px;
+  color: #fff;
+  margin: 0;
+}
+
+.close-btn {
+  border: none;
+  background: transparent;
+  font-size: 28px;
+  color: #aaa;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: color 0.3s ease, transform 0.25s ease;
+}
+
+.close-btn:hover {
+  color: #ff4444;
+  transform: scale(1.1);
+}
+
+/* Step progress bar container */
+/* Step progress bar container */
+.ba-steps {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  margin-bottom: 24px;
+  padding: 0 16px;
+  list-style: none;
+  /* Removed border-bottom to let progress-fill handle the bar */
+}
+
+/* Progress fill bar */
+.progress-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: #fe2c55;
+  transition: width 0.5s ease;
+  /* Smooth fill animation */
+}
+
+/* Each step */
+.ba-step {
+  position: relative;
+  font-weight: 600;
+  font-size: 14px;
+  color: #666;
+  /* inactive text */
+  cursor: default;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+  padding-bottom: 8px;
+  flex: 1;
+  transition: color 0.3s ease;
+}
+
+/* Step number circle */
+.ba-step span {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: #444;
+  /* default circle background */
+  color: #bbb;
+  /* default circle text */
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Active step styling */
+.ba-step.active {
+  color: white;
+  /* Removed border-bottom since progress-fill now handles the bar */
+  padding-bottom: 8px;
+  /* Adjusted to match inactive */
+}
+
+.ba-step.active span {
+  background-color: #fe2c55;
+  /* red filled circle */
+  color: white;
+}
+
+/* Completed step styling */
+.ba-step.completed {
+  color: #aaa;
+}
+
+.ba-step.completed span {
+  background-color: #666;
+  color: #ccc;
+}
+
+/* Step content area */
+.ba-step-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: #fff;
+  font-size: 15px;
+}
+
+/* Labels */
+.ba-step-content label {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 6px;
+  color: #b0b0b0;
+}
+
+.ba-step-content input[type="text"],
+.ba-step-content input[type="tel"] {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  font-size: 14px;
+  color: #fff;
+  background: #333;
+  transition: border-color 0.3s ease;
+}
+
+.ba-step-content input[type="text"]:focus,
+.ba-step-content input[type="tel"]:focus {
+  outline: none;
+  border-color: #fe2c55;
+  box-shadow: 0 0 7px rgba(254, 44, 85, 0.5);
+}
+
+/* Suggestions buttons */
+.suggestions-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #fe2c55;
+  margin-bottom: 8px;
+  user-select: none;
+}
+
+.suggestions-list {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.suggestion-item {
+  background: #333;
+  border: 1px solid #fe2c55;
+  border-radius: 6px;
+  color: #fe2c55;
+  padding: 6px 14px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.suggestion-item:hover,
+.suggestion-item:focus {
+  background: #fe2c55;
+  color: white;
+  outline: none;
+}
+
+/* Roles grid */
+.roles-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.role-item {
+  border: 1px solid #444;
+  border-radius: 10px;
+  padding: 18px 24px;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.role-item:hover {
+  border-color: #fe2c55;
+  box-shadow: 0 4px 12px rgba(254, 44, 85, 0.2);
+}
+
+.role-item input[type="radio"] {
+  margin-top: 4px;
+  accent-color: #fe2c55;
+  cursor: pointer;
+}
+
+.role-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.role-text strong {
+  font-weight: 700;
+  font-size: 16px;
+  color: #ddd;
+}
+
+.role-text .role-desc {
+  font-weight: 400;
+  font-size: 13px;
+  color: #bbb;
+  line-height: 1.3;
+}
+
+.role-price {
+  font-size: 12px;
+  color: #aaa;
+  margin-top: 4px;
+}
+
+/* Step 3: Details summary */
+.ba-step-content p {
+  font-weight: 600;
+  font-size: 14px;
+  color: #b0b0b0;
+  margin-bottom: 12px;
+}
+
+/* Upload box */
+.upload-label {
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #b0b0b0;
+}
+
+.upload-box {
+  border: 2px dashed #444;
+  border-radius: 12px;
+  cursor: pointer;
+  padding: 48px 0;
+  text-align: center;
+  color: #fe2c55;
+  font-weight: 700;
+  font-size: 14px;
+  transition: border-color 0.3s ease, background-color 0.3s ease;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.upload-box:hover {
+  border-color: #fe2c55;
+  background-color: rgba(254, 44, 85, 0.1);
+}
+
+.upload-box svg {
+  margin-bottom: 12px;
+  stroke: #fe2c55;
+  width: 48px;
+  height: 48px;
+  stroke-width: 2.5;
+}
+
+/* Confirmation step */
+.confirmation {
+  text-align: center;
+  padding: 48px 24px;
+  color: #fff;
+}
+
+.confirmation svg {
+  stroke: #fe2c55;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 24px;
+  stroke-width: 3;
+}
+
+.confirmation h3 {
+  font-weight: 700;
+  font-size: 22px;
+  margin-bottom: 8px;
+}
+
+.confirmation p {
+  color: #bbb;
+  font-weight: 400;
+  font-size: 15px;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+/* Navigation buttons */
+.ba-navigation {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 36px;
+}
+
+button {
+  font-weight: 700;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  cursor: pointer;
+  border-radius: 8px;
+  border: none;
+  padding: 12px 26px;
+  font-size: 15px;
+  transition: background-color 0.25s ease;
+  user-select: none;
+}
+
+.btn-back {
+  background: transparent;
+  color: #bbb;
+}
+
+.btn-back:hover {
+  color: #fe2c55;
+}
+
+.btn-next,
+.btn-apply {
+  background: #fe2c55;
+  color: white;
+}
+
+.btn-next:hover,
+.btn-apply:hover {
+  background: #d0244a;
+}
+
+.btn-close {
+  background: #fe2c55;
+  color: white;
+  width: 120px;
+}
+
+.btn-close:hover {
+  background: #d0244a;
+}
+
+/* Disabled input for Step 2 search */
+input[disabled] {
+  color: #777;
+  background: #222;
+  cursor: not-allowed;
+}
+
+/* Responsive & accessibility */
+@media (max-width: 700px) {
+  .business-application-content {
+    width: 100%;
+    padding: 24px 24px 36px;
+  }
+
+  .roles-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Upload Modal */
+.upload-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1100;
+}
+
+.upload-modal {
+  background: #2a2a2a;
+  border-radius: 12px;
+  padding: 24px;
+  width: 300px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  color: #fff;
+}
+
+.upload-modal h3 {
+  margin-bottom: 20px;
+  font-size: 18px;
+  color: #fff;
+}
+
+.modal-btn {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.modal-btn.take-photo {
+  background: #fe2c55;
+  color: white;
+}
+
+.modal-btn.take-photo:hover {
+  background: #d0244a;
+}
+
+.modal-btn.upload-gallery {
+  background: #333;
+  color: #fff;
+  border: 1px solid #444;
+}
+
+.modal-btn.upload-gallery:hover {
+  background: #444;
+}
+
+.modal-btn.cancel {
+  background: transparent;
+  color: #bbb;
+}
+
+.modal-btn.cancel:hover {
+  color: #fe2c55;
+}
+
+.camera-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.camera-popup video {
+  width: 80%;
+  max-width: 400px;
+  border-radius: 10px;
+}
+
+.camera-popup .camera-capture-button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+}
+
+.camera-popup .camera-close-button {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  padding: 10px;
+}
+
+.upload-box.uploaded {
+  border: none;
+  padding: 0;
+}
+
+.upload-preview-container {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.upload-preview-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+}
+
+.remove-image-button {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: rgba(0, 0, 0, 0.7);
+  border: none;
+  padding: 5px;
+  cursor: pointer;
+  border-radius: 50%;
+  background-color: #222;
+  width: 30px;
+  height: 30px;
+}
+
+.remove-image-button svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  position: absolute;
+}
+
+/* Business Hours Container (Adapted for dark theme) */
+.business-hours-container {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  padding: 16px;
+  background-color: #333;
+  /* Dark background */
+  border-radius: 8px;
+  border: 1px solid #444;
+  /* Dark border */
+}
+
+.business-hour-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background-color: #444;
+  /* Darker background for rows */
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  /* Darker shadow */
+}
+
+.day-label {
+  width: 80px;
+  font-weight: 600;
+  color: #fff;
+  /* Light text */
+}
+
+.time-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.time-label {
+  font-size: 14px;
+  color: #bbb;
+  /* Light gray text */
+}
+
+.ampm-label {
+  font-size: 12px;
+  color: #888;
+  /* Muted gray */
+}
+
+.closed-label {
+  display: flex;
+  align-items: center;
+  color: #bbb;
+  /* Light gray for closed state */
+  font-style: italic;
+  font-size: 14px;
+}
+
+/* Toggle Switch (Adapted for dark theme with red accent) */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 24px;
+  vertical-align: middle;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #666;
+  /* Dark gray for off state */
+  transition: 0.4s;
+  border-radius: 24px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: #fff;
+  /* White knob */
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+input:checked+.slider {
+  background-color: #fe2c55;
+  /* Red accent for on state (matches overlay theme) */
+}
+
+input:checked+.slider:before {
+  transform: translateX(16px);
+}
+
+/* Responsive Design for Business Hours */
+@media (max-width: 768px) {
+  .business-hour-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .day-label {
+    width: auto;
+  }
+
+  .time-inputs {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .business-hour-row {
+    padding: 8px;
+  }
+
+  .time-inputs {
+    gap: 4px;
+  }
+}
