@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import '../styles/restaurants.css';
 import { useParams } from 'react-router-dom';
 import { getAuth } from 'firebase/auth';
@@ -57,7 +57,7 @@ const isRestaurantOpen = (openHours) => {
 };
 
 // DishCard component that opens overlay on plus button click
-const DishCard = ({ dish, onOpenOverlay, isOpen, width, height }) => {
+const DishCard = ({ dish, onOpenOverlay, isOpen }) => {
   const renderPrice = (price) => {
     if (typeof price === 'number') return `₱ ${price.toFixed(0)}`;
     if (typeof price === 'string')
@@ -65,12 +65,7 @@ const DishCard = ({ dish, onOpenOverlay, isOpen, width, height }) => {
     return 'Price N/A';
   };
   return (
-    <div 
-      className="dish-card" 
-      tabIndex={0} 
-      aria-label={`Dish: ${dish.name}, Price: ${dish.price}`}
-      style={{ width: `${width}px`, height: `${height}px` }}
-    >
+    <div className="dish-card" tabIndex={0} aria-label={`Dish: ${dish.name}, Price: ${dish.price}`}>
       <div className="dish-image-container">
         <img
           src={dish.imageSrc || 'https://via.placeholder.com/150x150?text=No+Image'}
@@ -179,35 +174,6 @@ const RestaurantPage = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [lastDoc, setLastDoc] = useState(null);
-  const [cardDimensions, setCardDimensions] = useState({ width: 250, height: 125 }); // Default for desktop
-
-  const gridRef = useRef(null);
-
-  // Function to calculate card dimensions
-  const calculateCardDimensions = useCallback(() => {
-    if (!gridRef.current) return;
-
-    const container = gridRef.current.parentElement; // Assuming the grid is inside a container
-    const containerWidth = container.offsetWidth;
-    const gap = 20; // From CSS
-    const minCardWidth = window.innerWidth <= 480 ? 200 : 250; // Mobile: 200px, Desktop: 250px
-    const preferredColumns = 3; // Aim to fit 3 cards
-
-    // Calculate card width for preferred columns
-    const totalGapWidth = (preferredColumns - 1) * gap;
-    let cardWidth = (containerWidth - totalGapWidth) / preferredColumns;
-
-    // If cardWidth is less than minCardWidth, reduce columns
-    let numColumns = preferredColumns;
-    while (cardWidth < minCardWidth && numColumns > 1) {
-      numColumns--;
-      cardWidth = (containerWidth - (numColumns - 1) * gap) / numColumns;
-    }
-
-    const cardHeight = cardWidth / 2; // Maintain 2:1 aspect ratio
-
-    setCardDimensions({ width: cardWidth, height: cardHeight });
-  }, []);
 
   // Fetch the restaurant data
   useEffect(() => {
@@ -429,14 +395,6 @@ const RestaurantPage = () => {
 
     return () => unsub();
   }, [restaurantId]);
-
-  // Calculate card dimensions on mount and resize
-  useEffect(() => {
-    calculateCardDimensions();
-    const handleResize = () => calculateCardDimensions();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [calculateCardDimensions]);
 
   // Handlers
   const openOverlay = (dishId) => setOverlayDishId(dishId);
@@ -689,9 +647,9 @@ const RestaurantPage = () => {
           Object.entries(dishesByCategory).map(([category, dishes]) => (
             <article key={category} className="category-section">
               <h3 className="category-title">{category}</h3>
-              <div className="category-dish-grid" ref={gridRef}>
+              <div className="category-dish-grid">
                 {dishes.map(dish => (
-                  <DishCard key={dish.id} dish={dish} onOpenOverlay={openOverlay} isOpen={isOpen} width={cardDimensions.width} height={cardDimensions.height} />
+                  <DishCard key={dish.id} dish={dish} onOpenOverlay={openOverlay} isOpen={isOpen} />
                 ))}
               </div>
             </article>
@@ -699,9 +657,9 @@ const RestaurantPage = () => {
         ) : (
           <article className="category-section">
             <h3 className="category-title">{selectedCategory}</h3>
-            <div className="category-dish-grid" ref={gridRef}>
+            <div className="category-dish-grid">
               {dishesToDisplay.map(dish => (
-                <DishCard key={dish.id} dish={dish} onOpenOverlay={openOverlay} isOpen={isOpen} width={cardDimensions.width} height={cardDimensions.height} />
+                <DishCard key={dish.id} dish={dish} onOpenOverlay={openOverlay} isOpen={isOpen} />
               ))}
             </div>
           </article>
