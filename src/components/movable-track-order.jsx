@@ -3,15 +3,10 @@ import '../styles/track-order.css';
 
 const MovableTrackOrder = ({ order, onConfirmReceived, onClose }) => {
   const [collapsed, setCollapsed] = useState(true);
-  const [position, setPosition] = useState({ x: 0, y: 60 }); // Default, updated in useEffect
+  const [position, setPosition] = useState({ x: window.innerWidth - 360, y: 60 });
   const [dragging, setDragging] = useState(false);
   const dragOffset = useRef({ x: 0, y: 0 });
   const trackRef = useRef(null);
-
-  // Set initial position on client-side
-  useEffect(() => {
-    setPosition({ x: window.innerWidth - 320, y: 60 });
-  }, []);
 
   if (!order) return null;
 
@@ -20,7 +15,6 @@ const MovableTrackOrder = ({ order, onConfirmReceived, onClose }) => {
 
   // Drag event handlers
   const onMouseDown = (e) => {
-    console.log('Mouse down on track order'); // Debug log
     if (e.button !== 0) return; // Left-click only
     setDragging(true);
     const rect = trackRef.current.getBoundingClientRect();
@@ -33,14 +27,12 @@ const MovableTrackOrder = ({ order, onConfirmReceived, onClose }) => {
 
   const onMouseMove = (e) => {
     if (!dragging) return;
-    console.log('Dragging track order'); // Debug log
     const newX = Math.min(window.innerWidth - trackRef.current.offsetWidth, Math.max(0, e.clientX - dragOffset.current.x));
     const newY = Math.min(window.innerHeight - trackRef.current.offsetHeight, Math.max(0, e.clientY - dragOffset.current.y));
     setPosition({ x: newX, y: newY });
   };
 
   const onMouseUp = () => {
-    console.log('Mouse up on track order'); // Debug log
     setDragging(false);
   };
 
@@ -112,7 +104,15 @@ const MovableTrackOrder = ({ order, onConfirmReceived, onClose }) => {
           className="collapse-btn"
           type="button"
         >
-          {collapsed ? '▼' : '▲'}
+          {collapsed ? (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M17 14L12 9L7 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          )}
         </button>
       </div>
 

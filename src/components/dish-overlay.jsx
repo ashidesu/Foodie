@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import '../styles/dish-overlay.css';
 
-const DishOverlay = ({ dish, onClose, onAddToCart }) => {
+const DishOverlay = ({ dish, onClose, onAddToCart, isOpen }) => {
   const [quantity, setQuantity] = useState(1);
 
   if (!dish) return null;
@@ -9,8 +8,21 @@ const DishOverlay = ({ dish, onClose, onAddToCart }) => {
   const increment = () => setQuantity(q => q + 1);
   const decrement = () => setQuantity(q => (q > 1 ? q - 1 : 1));
 
+  // Safe price formatting: no decimals in your example
+  const renderPrice = (price) => {
+    const n = Number(price);
+    return isNaN(n) ? 'N/A' : `₱ ${n.toFixed(0)}`;
+  };
+
   return (
-    <div className="overlay-backdrop" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="dish-title" tabIndex={-1}>
+    <div
+      className="overlay-backdrop"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="dish-title"
+      tabIndex={-1}
+    >
       <div className="overlay-container" onClick={e => e.stopPropagation()}>
         <button
           className="overlay-close-btn"
@@ -30,11 +42,13 @@ const DishOverlay = ({ dish, onClose, onAddToCart }) => {
 
         <div className="dish-info-section">
           <h2 id="dish-title" className="dish-name">{dish.name}</h2>
-          <p className="dish-price">₱ {dish.price}</p>
           <p className="dish-description">{dish.description}</p>
+          <p className="dish-extra-desc" title={dish.extraDescription || ''}>
+            {dish.extraDescription}
+          </p>
+          <p className="dish-price">{renderPrice(dish.price)}</p>
         </div>
 
-        {/* Quantity selector and Add to Cart button in fixed footer */}
         <div className="overlay-footer">
           <div className="quantity-selector">
             <button type="button" onClick={decrement} aria-label="Decrease quantity" className="qty-btn">−</button>
@@ -45,9 +59,11 @@ const DishOverlay = ({ dish, onClose, onAddToCart }) => {
             type="button"
             className="add-to-cart-btn"
             onClick={() => onAddToCart(dish.id, quantity)}
+            disabled={!isOpen}
           >
             Add to cart
           </button>
+          {!isOpen && <p className="closed-message">Ordering is disabled because the restaurant is closed.</p>}
         </div>
       </div>
     </div>

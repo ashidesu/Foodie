@@ -8,105 +8,6 @@ import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid';
 import supabase from '../supabase'; // Assuming Supabase client is configured and exported
 
-
-const handleApply = async () => {
-  if (!selectedProvince || !selectedCity || !selectedBarangay || !street.trim() ||
-    !ownerName.trim() || !sex || !age.trim() || !civilStatus || !birthdate ||
-    !selfieFile || !validIdFile || !selfieWithIdFile || !phone.trim() ||
-    !restaurantName.trim() || !averageIncome.trim() || !displayPhotoFile || !coverPhotoFile) {
-    alert('Please fill in all required fields and upload all required files');
-    return;
-  }
-  const user = auth.currentUser;
-  if (!user) {
-    alert('You must be logged in to submit');
-    return;
-  }
-
-  setIsUploading(true);
-
-  try {
-    const applicationId = uuidv4();
-
-    // Upload files to Supabase Storage (adapted from UploadPage's upload logic)
-    const uploadPromises = [
-      selfieFile ? supabase.storage.from('applications').upload(`${applicationId}/selfie.jpg`, selfieFile) : Promise.resolve({ data: null }),
-      validIdFile ? supabase.storage.from('applications').upload(`${applicationId}/validId.jpg`, validIdFile) : Promise.resolve({ data: null }),
-      selfieWithIdFile ? supabase.storage.from('applications').upload(`${applicationId}/selfieWithId.jpg`, selfieWithIdFile) : Promise.resolve({ data: null }),
-      displayPhotoFile ? supabase.storage.from('applications').upload(`${applicationId}/display.jpg`, displayPhotoFile) : Promise.resolve({ data: null }),
-      coverPhotoFile ? supabase.storage.from('applications').upload(`${applicationId}/cover.jpg`, coverPhotoFile) : Promise.resolve({ data: null }),
-      ...additionalProofsFiles.map((file, index) => supabase.storage.from('applications').upload(`${applicationId}/additional${index}.${file.name.split('.').pop()}`, file)),
-    ];
-
-    const uploadResults = await Promise.all(uploadPromises);
-
-    // Extract public URLs from Supabase (assuming public bucket; adjust if private)
-    const getPublicURL = (path) => supabase.storage.from('applications').getPublicUrl(path).data.publicUrl;
-
-    const [
-      selfieResult,
-      validIdResult,
-      selfieWithIdResult,
-      displayResult,
-      coverResult,
-      ...additionalResults
-    ] = uploadResults;
-
-    const selfieURL = selfieResult.data ? getPublicURL(selfieResult.data.path) : '';
-    const validIdURL = validIdResult.data ? getPublicURL(validIdResult.data.path) : '';
-    const selfieWithValidIdURL = selfieWithIdResult.data ? getPublicURL(selfieWithIdResult.data.path) : '';
-    const displayURL = displayResult.data ? getPublicURL(displayResult.data.path) : '';
-    const coverURL = coverResult.data ? getPublicURL(coverResult.data.path) : '';
-    const additionalURLs = additionalResults.map(result => result.data ? getPublicURL(result.data.path) : '');
-
-    // Store metadata in Firebase Firestore (like UploadPage stores in Firestore)
-    await addDoc(collection(db, 'applications'), {
-      id: applicationId,
-      uploaderId: user.uid,
-      address: {
-        street,
-        barangay: selectedBarangay.value,
-        city: selectedCity.value,
-        province: selectedProvince.value,
-        region: selectedRegion,
-      },
-      fullName: ownerName,
-      sex,
-      civilStatus,
-      birthdate,
-      nationality,
-      occupation,
-      photoURLs: {
-        selfieURL,
-        validIdURL,
-        selfieWithValidIdURL,
-        displayURL,
-        coverURL,
-      },
-      additionalFileURLs: additionalURLs,
-      businessHours: openHours,
-      restaurantName,
-      phone,
-      averageIncome: parseFloat(averageIncome),
-      deliveryAreas,
-      submittedAt: new Date(),
-      status: "pending",
-    });
-    console.log('Updating user document for UID:', user.uid);
-    await setDoc(doc(db, 'users', user.uid), { applicationActive: true }, { merge: true });
-    console.log('User document updated successfully');
-    alert('Application submitted successfully!');
-    setStep(4);
-  } catch (error) {
-    console.error('Submission failed:', error);
-    alert('Submission failed. Please try again.');
-  } finally {
-    setIsUploading(false);
-  }
-};
-
-
-
 const BusinessApplicationOverlay = ({ isOpen, onClose }) => {
   const [step, setStep] = useState(1);
   const [isUploading, setIsUploading] = useState(false);
@@ -415,7 +316,7 @@ const BusinessApplicationOverlay = ({ isOpen, onClose }) => {
 
       // Store metadata in Firebase Firestore (like UploadPage stores in Firestore)
       await addDoc(collection(db, 'applications'), {
-        id: applicationId,
+        folderId: applicationId,
         uploaderId: user.uid,
         address: {
           street,
@@ -444,6 +345,7 @@ const BusinessApplicationOverlay = ({ isOpen, onClose }) => {
         averageIncome: parseFloat(averageIncome),
         deliveryAreas,
         submittedAt: new Date(),
+        status: "pending"
       });
       console.log('Updating user document for UID:', user.uid);
       await setDoc(doc(db, 'users', user.uid), { applicationActive: true }, { merge: true });

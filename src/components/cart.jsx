@@ -1,8 +1,6 @@
-// MovableCart Component
-import { createClient } from '@supabase/supabase-js';
-import supabase from '../supabase';
-
-const MovableCart = ({ cart, onRemove, onCancel, onAddOrder }) => {
+import React, { useState, useEffect, useRef } from 'react';
+import '../styles/cart.css'
+const MovableCart = ({ cart, onUpdateQuantity, onCancel, onAddOrder }) => {
   const [collapsed, setCollapsed] = useState(true);
   const [position, setPosition] = useState({ x: 20, y: 60 });
   const [dragging, setDragging] = useState(false);
@@ -10,17 +8,18 @@ const MovableCart = ({ cart, onRemove, onCancel, onAddOrder }) => {
   const cartRef = useRef(null);
 
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const cartTotal = cart.reduce((sum, item) => sum + item.quantity * item.price, 0);
+  const cartTotal = cart.reduce((sum, item) => sum + item.quantity * Number(item.price || 0), 0);
 
-  // Drag event handlers
+  const formatPrice = (price) => {
+    const n = Number(price);
+    return isNaN(n) ? 'N/A' : `₱ ${n.toFixed(0)}`;
+  };
+
   const onMouseDown = (e) => {
-    if (e.button !== 0) return; // Left-click only
+    if (e.button !== 0) return;
     setDragging(true);
     const rect = cartRef.current.getBoundingClientRect();
-    dragOffset.current = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    };
+    dragOffset.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     e.preventDefault();
   };
 
@@ -31,9 +30,7 @@ const MovableCart = ({ cart, onRemove, onCancel, onAddOrder }) => {
     setPosition({ x: newX, y: newY });
   };
 
-  const onMouseUp = () => {
-    setDragging(false);
-  };
+  const onMouseUp = () => setDragging(false);
 
   useEffect(() => {
     if (dragging) {
@@ -66,16 +63,14 @@ const MovableCart = ({ cart, onRemove, onCancel, onAddOrder }) => {
         tabIndex={0}
         aria-label="Drag shopping cart panel"
         role="button"
-        onKeyDown={e => {
-          if (e.key === 'Enter' || e.key === ' ') setCollapsed(!collapsed);
-        }}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setCollapsed(!collapsed); }}
       >
         {collapsed ? (
-          <>
+          <div className="collapsed-info">
             <span>{totalItems} item{totalItems > 1 ? 's' : ''}</span>
             <span>&#8226;</span>
-            <span>₱ {cartTotal.toFixed(2)}</span>
-          </>
+            <span>{formatPrice(cartTotal)}</span>
+          </div>
         ) : (
           <span>Shopping Cart</span>
         )}
@@ -85,51 +80,72 @@ const MovableCart = ({ cart, onRemove, onCancel, onAddOrder }) => {
           className="collapse-btn"
           type="button"
         >
-          {collapsed ? '▼' : '▲'}
+          {collapsed ? (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M17 14L12 9L7 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          )}
         </button>
       </div>
 
       {!collapsed && (
         <div className="cart-content">
           <ul className="cart-items-list">
-            {cart.map(({ id, name, quantity, price, imageSrc }) => {
-              // Copied image fetching method from DishOverlay
-              const imageUrl = imageSrc || 'https://via.placeholder.com/50x50?text=No+Image';
-              
+            {cart.map(({ id, name, quantity, price, imageSrc, description }) => {
+              const imageUrl = imageSrc || 'https://via.placeholder.com/80x80?text=No+Image';
               return (
                 <li key={id} className="cart-item">
-                  <img 
-                    src={imageUrl} 
-                    alt={name} 
-                    className="item-image" 
-                    onError={(e) => { e.target.src = 'https://via.placeholder.com/50x50?text=No+Image'; }} 
+                  <img
+                    src={imageUrl}
+                    alt={name}
+                    className="item-image"
+                    onError={(e) => { e.target.src = 'https://via.placeholder.com/80x80?text=No+Image'; }}
+                    loading="lazy"
                   />
-                  <div className="item-info">
-                    <span className="item-name">{name}</span>
-                    <span className="item-quantity">x{quantity}</span>
-                    <span className="item-subtotal">₱ {(quantity * price).toFixed(2)}</span>
+                  <div className="item-details">
+                    <h4 className="item-name">{name}</h4>
+                    {description && <p className="item-desc">{description}</p>}
+                    <div className="item-controls">
+                      <span className="item-price">{formatPrice(price)}</span>
+                      <div className="quantity-controls">
+                        <button
+                          aria-label={`Decrease quantity of ${name}`}
+                          type="button"
+                          onClick={() => quantity > 1 ? onUpdateQuantity(id, quantity - 1) : null}
+                          className="qty-btn"
+                        >
+                          −
+                        </button>
+                        <span className="qty-value">{quantity}</span>
+                        <button
+                          aria-label={`Increase quantity of ${name}`}
+                          type="button"
+                          onClick={() => onUpdateQuantity(id, quantity + 1)}
+                          className="qty-btn"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <button
-                    aria-label={`Remove ${name} from cart`}
-                    className="remove-btn"
-                    onClick={() => onRemove(id)}
-                    type="button"
-                  >
-                    ✕
-                  </button>
                 </li>
               );
             })}
           </ul>
+
           <div className="cart-footer">
             <span className="cart-total-label">Total:</span>
-            <span className="cart-total-value">₱ {cartTotal.toFixed(2)}</span>
+            <span className="cart-total-value">{formatPrice(cartTotal)}</span>
           </div>
 
           <div className="cart-actions">
-            <button 
-              className="cancel-order-btn" 
-              type="button" 
+            <button
+              className="cancel-order-btn"
+              type="button"
               onClick={onCancel}
               aria-label="Cancel entire order"
             >
@@ -151,4 +167,4 @@ const MovableCart = ({ cart, onRemove, onCancel, onAddOrder }) => {
   );
 };
 
-export default MovableCart;
+export default MovableCart; 

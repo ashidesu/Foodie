@@ -1,16 +1,25 @@
-import React, { useState, useEffect, useRef } from 'react';
-import '../styles/cart.css';
+import React, { useState, useEffect } from 'react';
 import '../styles/restaurants.css';
-import '../styles/dish-overlay.css';
-import '../styles/track-order.css';
-import '../styles/payment-review.css';
 import { useParams } from 'react-router-dom';
 import { getAuth } from 'firebase/auth';
 import { db } from '../firebase';
-import { collection, getDocs, query, where, orderBy, addDoc, Timestamp, onSnapshot, updateDoc, doc, getDoc } from 'firebase/firestore';
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  addDoc,
+  Timestamp,
+  onSnapshot,
+  updateDoc,
+  doc,
+  getDoc
+} from 'firebase/firestore';
 import supabase from '../supabase';
 import MovablePaymentReview from './movable-payment-review.jsx';
 import MovableTrackOrder from './movable-track-order.jsx';
+import MovableCart from './cart.jsx';
 
 // Helper: Check if restaurant is currently open based on openHours
 const isRestaurantOpen = (openHours) => {
@@ -27,18 +36,16 @@ const isRestaurantOpen = (openHours) => {
   ];
 
   const now = new Date();
-  const dayName = daysOfWeek[now.getDay()]; // Sunday = 0
+  const dayName = daysOfWeek[now.getDay()];
 
   if (!openHours[dayName]?.enabled) return false;
 
   const openTimeStr = openHours[dayName].open || '09:00';
   const closeTimeStr = openHours[dayName].close || '17:30';
 
-  // Parse hours and minutes
   const [openHour, openMinute] = openTimeStr.split(':').map(Number);
   const [closeHour, closeMinute] = closeTimeStr.split(':').map(Number);
 
-  // Create Date objects for open and close today
   const openDate = new Date(now);
   openDate.setHours(openHour, openMinute, 0, 0);
   const closeDate = new Date(now);
@@ -47,148 +54,43 @@ const isRestaurantOpen = (openHours) => {
   return now >= openDate && now <= closeDate;
 };
 
-// MovableCart Component
-const MovableCart = ({ cart, onRemove, onCancel, onAddOrder, isOpen }) => {
-  const [collapsed, setCollapsed] = useState(true);
-  const [position, setPosition] = useState({ x: 20, y: 60 });
-  const [dragging, setDragging] = useState(false);
-  const dragOffset = useRef({ x: 0, y: 0 });
-  const cartRef = useRef(null);
-
-  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const cartTotal = cart.reduce((sum, item) => sum + item.quantity * item.price, 0);
-
-  // Drag event handlers
-  const onMouseDown = (e) => {
-    if (e.button !== 0) return; // Left-click only
-    setDragging(true);
-    const rect = cartRef.current.getBoundingClientRect();
-    dragOffset.current = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    };
-    e.preventDefault();
+// DishCard component that opens overlay on plus button click
+const DishCard = ({ dish, onOpenOverlay, isOpen }) => {
+  const renderPrice = (price) => {
+    if (typeof price === 'number') return `₱ ${price.toFixed(0)}`;
+    if (typeof price === 'string')
+      return price.trim().startsWith('₱') ? price.trim() : `₱ ${price.trim()}`;
+    return 'Price N/A';
   };
-
-  const onMouseMove = (e) => {
-    if (!dragging) return;
-    const newX = Math.min(window.innerWidth - cartRef.current.offsetWidth, Math.max(0, e.clientX - dragOffset.current.x));
-    const newY = Math.min(window.innerHeight - cartRef.current.offsetHeight, Math.max(0, e.clientY - dragOffset.current.y));
-    setPosition({ x: newX, y: newY });
-  };
-
-  const onMouseUp = () => {
-    setDragging(false);
-  };
-
-  useEffect(() => {
-    if (dragging) {
-      window.addEventListener('mousemove', onMouseMove);
-      window.addEventListener('mouseup', onMouseUp);
-    } else {
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
-    }
-    return () => {
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
-    };
-  }, [dragging]);
-
-  if (cart.length === 0) return null;
-
   return (
-    <div
-      className={`movable-cart ${collapsed ? 'collapsed' : 'expanded'}`}
-      style={{ top: position.y, left: position.x }}
-      ref={cartRef}
-      role="complementary"
-      aria-label="Shopping cart"
-    >
-      <div
-        className="cart-header"
-        onMouseDown={onMouseDown}
-        aria-grabbed={dragging}
-        tabIndex={0}
-        aria-label="Drag shopping cart panel"
-        role="button"
-        onKeyDown={e => {
-          if (e.key === 'Enter' || e.key === ' ') setCollapsed(!collapsed);
-        }}
-      >
-        {collapsed ? (
-          <>
-            <span>{totalItems} item{totalItems > 1 ? 's' : ''}</span>
-            <span>&#8226;</span>
-            <span>₱ {cartTotal.toFixed(2)}</span>
-          </>
-        ) : (
-          <span>Shopping Cart</span>
-        )}
+    <div className="dish-card" tabIndex={0} aria-label={`Dish: ${dish.name}, Price: ${dish.price}`}>
+      <div className="dish-image-container">
+        <img
+          src={dish.imageSrc || 'https://via.placeholder.com/150x150?text=No+Image'}
+          alt={dish.name}
+          className="dish-image"
+          loading="lazy"
+        />
         <button
-          aria-label={collapsed ? 'Expand cart' : 'Collapse cart'}
-          onClick={() => setCollapsed(!collapsed)}
-          className="collapse-btn"
+          aria-label={`Open ${dish.name} details`}
+          className="dish-add-btn"
+          onClick={() => onOpenOverlay(dish.id)}
+          disabled={!isOpen}
           type="button"
         >
-          {collapsed ? '▼' : '▲'}
+          +
         </button>
       </div>
-
-      {!collapsed && (
-        <div className="cart-content">
-          <ul className="cart-items-list">
-            {cart.map(({ id, name, quantity, price, imageSrc }) => (
-              <li key={id} className="cart-item">
-                <div className="item-info">
-                  <span className="item-name">{name}</span>
-                  <span className="item-quantity">x{quantity}</span>
-                  <span className="item-subtotal">₱ {(quantity * price).toFixed(2)}</span>
-                </div>
-                <button
-                  aria-label={`Remove ${name} from cart`}
-                  className="remove-btn"
-                  onClick={() => onRemove(id)}
-                  type="button"
-                >
-                  ✕
-                </button>
-              </li>
-            ))}
-          </ul>
-          <div className="cart-footer">
-            <span className="cart-total-label">Total:</span>
-            <span className="cart-total-value">₱ {cartTotal.toFixed(2)}</span>
-          </div>
-
-          <div className="cart-actions">
-            <button
-              className="cancel-order-btn"
-              type="button"
-              onClick={onCancel}
-              aria-label="Cancel entire order"
-            >
-              Cancel Order
-            </button>
-
-            <button
-              className="add-order-btn"
-              type="button"
-              onClick={() => onAddOrder(cart, cartTotal)}
-              aria-label="Add order"
-              disabled={!isOpen}
-            >
-              Review Payment Method
-            </button>
-            {!isOpen && <p className="closed-message">Ordering is disabled because the restaurant is closed.</p>}
-          </div>
-        </div>
-      )}
+      <div className="dish-info">
+        <h4 className="dish-name" title={dish.name}>{dish.name}</h4>
+        <p className="dish-price">{renderPrice(dish.price)}</p>
+        {dish.description && <p className="dish-desc" title={dish.description}>{dish.description}</p>}
+      </div>
     </div>
   );
 };
 
-// DishOverlay Component
+// DishOverlay component with quantity selector and Add to Cart button
 const DishOverlay = ({ dish, onClose, onAddToCart, isOpen }) => {
   const [quantity, setQuantity] = useState(1);
 
@@ -196,6 +98,12 @@ const DishOverlay = ({ dish, onClose, onAddToCart, isOpen }) => {
 
   const increment = () => setQuantity(q => q + 1);
   const decrement = () => setQuantity(q => (q > 1 ? q - 1 : 1));
+
+  // Safe price formatting no decimals
+  const renderPrice = (price) => {
+    const n = Number(price);
+    return isNaN(n) ? 'N/A' : `₱ ${n.toFixed(0)}`;
+  };
 
   return (
     <div className="overlay-backdrop" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="dish-title" tabIndex={-1}>
@@ -218,11 +126,10 @@ const DishOverlay = ({ dish, onClose, onAddToCart, isOpen }) => {
 
         <div className="dish-info-section">
           <h2 id="dish-title" className="dish-name">{dish.name}</h2>
-          <p className="dish-price">₱ {dish.price}</p>
           <p className="dish-description">{dish.description}</p>
+          <p className="dish-price">{renderPrice(dish.price)}</p>
         </div>
 
-        {/* Quantity selector and Add to Cart button in fixed footer */}
         <div className="overlay-footer">
           <div className="quantity-selector">
             <button type="button" onClick={decrement} aria-label="Decrease quantity" className="qty-btn">−</button>
@@ -244,10 +151,10 @@ const DishOverlay = ({ dish, onClose, onAddToCart, isOpen }) => {
   );
 };
 
-// Main RestaurantPage Component
 const RestaurantPage = () => {
   const { id: restaurantId } = useParams();
 
+  const [restaurant, setRestaurant] = useState(null);
   const [dishes, setDishes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -257,18 +164,15 @@ const RestaurantPage = () => {
   const [cart, setCart] = useState([]);
   const [currentOrder, setCurrentOrder] = useState(null);
   const [showPaymentReview, setShowPaymentReview] = useState(false);
-  const [showCart, setShowCart] = useState(true); // Add state for cart visibility
-  const [restaurant, setRestaurant] = useState(null);
+  const [showCart, setShowCart] = useState(true);
+  const [popularDishes, setPopularDishes] = useState([]);
 
-  const truncateText = (text, maxLength) => {
-    if (!text) return '';
-    return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
-  };
-
+  // Fetch the restaurant data
   useEffect(() => {
     const fetchRestaurant = async () => {
       try {
-        const restaurantDoc = await getDoc(doc(db, 'restaurants', restaurantId));
+        const docRef = doc(db, 'restaurants', restaurantId);
+        const restaurantDoc = await getDoc(docRef);
         if (restaurantDoc.exists()) {
           setRestaurant(restaurantDoc.data());
         } else {
@@ -276,12 +180,13 @@ const RestaurantPage = () => {
         }
       } catch (err) {
         console.error('Error fetching restaurant:', err);
-        setError('Failed to load restaurant.');
+        setError('Failed to load restaurant data.');
       }
     };
     fetchRestaurant();
   }, [restaurantId]);
 
+  // Fetch dishes
   useEffect(() => {
     const fetchDishes = async () => {
       try {
@@ -291,163 +196,171 @@ const RestaurantPage = () => {
           return;
         }
         const dishesRef = collection(db, 'dishes');
-        const dishesQuery = query(
-          dishesRef,
-          where('restaurantId', '==', restaurantId),
-          orderBy('createdAt', 'desc')
-        );
-        const dishesSnapshot = await getDocs(dishesQuery);
+        const q = query(dishesRef, where('restaurantId', '==', restaurantId), orderBy('createdAt', 'desc'));
+        const snapshot = await getDocs(q);
         const dishesList = [];
-
-        for (const docSnap of dishesSnapshot.docs) {
-          const dishData = docSnap.data();
-          const { name, category, price, description, restaurantId, imageUrl, createdAt } = dishData;
-          const dishId = docSnap.id;
-
-          let publicImageUrl = '';
-          if (imageUrl) {
+        for (const docSnap of snapshot.docs) {
+          const data = docSnap.data();
+          // Attempt get public image URL if imageUrl provided
+          let imageSrc = '';
+          if (data.imageUrl) {
             try {
-              const { data: urlData } = supabase.storage.from('dishes').getPublicUrl(imageUrl);
-              publicImageUrl = urlData?.publicUrl || '';
-            } catch (urlError) {
-              console.error('Error getting image URL:', urlError);
-            }
+              const { data: urlData } = supabase.storage.from('dishes').getPublicUrl(data.imageUrl);
+              imageSrc = urlData?.publicUrl || '';
+            } catch { }
           }
-
           dishesList.push({
-            id: dishId,
-            name,
-            category,
-            price,
-            description,
-            restaurantId,
-            imageSrc: publicImageUrl,
-            createdAt: createdAt?.toDate ? createdAt.toDate().toLocaleDateString() : 'Unknown',
+            id: docSnap.id,
+            name: data.name,
+            category: data.category,
+            price: data.price,
+            description: data.description || '',
+            imageSrc,
           });
         }
-
         setDishes(dishesList);
-      } catch (fetchError) {
-        console.error('Error fetching dishes:', fetchError);
-        setError('Failed to load dishes. Please try again.');
-      } finally {
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching dishes:', err);
+        setError('Error loading dishes.');
         setLoading(false);
       }
     };
-
     fetchDishes();
   }, [restaurantId]);
 
-  // Fetch and listen for user's active order in real-time
+  // Fetch popular dishes based on orders
+  useEffect(() => {
+    const fetchPopularDishes = async () => {
+      try {
+        if (!restaurantId || dishes.length === 0) return;
+
+        const ordersRef = collection(db, 'orders');
+        const q = query(
+          ordersRef,
+          where('restaurantId', '==', restaurantId),
+          where('status', 'in', ['pending', 'preparing', 'ready', 'out for delivery', 'completed']),
+          orderBy('createdAt', 'desc')
+        );
+
+        const snapshot = await getDocs(q);
+        const dishCount = {};
+
+        snapshot.forEach(docSnap => {
+          const order = docSnap.data();
+          order.items.forEach(item => {
+            dishCount[item.id] = (dishCount[item.id] || 0) + item.quantity;
+          });
+        });
+
+        // Map dishCount to dish data and sort descending by count and slice 6 max
+        const popular = Object.entries(dishCount)
+          .map(([id, count]) => {
+            const dish = dishes.find(d => d.id === id);
+            return dish ? { ...dish, count } : null;
+          })
+          .filter(Boolean)
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 6);
+
+        setPopularDishes(popular);
+      } catch (error) {
+        console.error('Error fetching popular dishes:', error);
+      }
+    };
+    fetchPopularDishes();
+  }, [restaurantId, dishes]);
+
+  // Listen for user’s active order
   useEffect(() => {
     const auth = getAuth();
     const user = auth.currentUser;
-
-    if (!user) return; // No user, no order to fetch
+    if (!user) return;
 
     const ordersRef = collection(db, 'orders');
-    const orderQuery = query(
+    const q = query(
       ordersRef,
       where('userId', '==', user.uid),
       where('restaurantId', '==', restaurantId),
-      where('active', '==', true), // Only show active orders
-      where('status', 'in', ['pending', 'preparing', 'ready', 'out for delivery', 'completed', 'cancelled']) // Include all relevant statuses
+      where('active', '==', true)
     );
 
-    const unsubscribe = onSnapshot(orderQuery, (snapshot) => {
+    const unsub = onSnapshot(q, snapshot => {
       if (!snapshot.empty) {
-        const orderDoc = snapshot.docs[0]; // Assuming one active order per user per restaurant
-        const orderData = orderDoc.data();
-        // Do not auto-close for any status; let user manually close
-        setCurrentOrder({ id: orderDoc.id, ...orderData });
+        const orderDoc = snapshot.docs[0];
+        setCurrentOrder({ id: orderDoc.id, ...orderDoc.data() });
       } else {
         setCurrentOrder(null);
       }
-    }, (error) => {
-      console.error('Error listening to order updates:', error);
     });
 
-    return () => unsubscribe(); // Cleanup listener
+    return () => unsub();
   }, [restaurantId]);
 
+  // Handlers
   const openOverlay = (dishId) => setOverlayDishId(dishId);
   const closeOverlay = () => setOverlayDishId(null);
 
-  const dishInOverlay = dishes.find(d => d.id === overlayDishId);
-
-  // FIXED: Add to cart function - now properly handles quantity without doubling
-  const handleAddToCart = (dishId, quantity) => {
-    setCart(prevCart => {
-      const existingItem = prevCart.find(item => item.id === dishId);
-
-      if (existingItem) {
-        // If item already exists, update the quantity
-        return prevCart.map(item =>
-          item.id === dishId
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
-        );
+  const handleAddToCart = (dishId, quantity = 1) => {
+    setCart(prev => {
+      const exist = prev.find(i => i.id === dishId);
+      if (exist) {
+        return prev.map(i => (i.id === dishId ? { ...i, quantity: i.quantity + quantity } : i));
       } else {
-        // If item doesn't exist, add it to cart
         const dish = dishes.find(d => d.id === dishId);
-        if (!dish) return prevCart;
-        return [...prevCart, { ...dish, quantity }];
+        if (!dish) return prev;
+        return [...prev, { ...dish, quantity }];
       }
     });
     closeOverlay();
   };
 
-  const handleRemoveFromCart = (dishId) => {
-    setCart(prevCart => prevCart.filter(item => item.id !== dishId));
+  const handleUpdateQuantity = (dishId, newQuantity) => {
+    setCart(prev => {
+      if (newQuantity <= 0) {
+        return prev.filter(i => i.id !== dishId);
+      } else {
+        return prev.map(i => i.id === dishId ? { ...i, quantity: newQuantity } : i);
+      }
+    });
   };
 
-  const handleCancelOrder = () => {
-    setCart([]);
-  };
+  const handleCancelOrder = () => setCart([]);
 
   const handleReviewPayment = () => {
-    setShowCart(false); // Hide cart when opening payment review
+    setShowCart(false);
     setShowPaymentReview(true);
   };
 
   const handleCancelPaymentReview = () => {
     setShowPaymentReview(false);
-    setShowCart(true); // Show cart again when canceling payment review
+    setShowCart(true);
   };
 
   const handleSubmitOrder = async (cartItems, totalPrice, paymentMethod) => {
     const auth = getAuth();
     const user = auth.currentUser;
-
     if (!user) {
       alert('You must be signed in to place an order.');
       return;
     }
-
     const orderPayload = {
       userId: user.uid,
-      items: cartItems.map(({ id, name, quantity, price }) => ({
-        id,
-        name,
-        quantity,
-        price,
-      })),
+      items: cartItems.map(({ id, name, quantity, price }) => ({ id, name, quantity, price })),
       totalPrice,
-      paymentMethod, // Add payment method
+      paymentMethod,
       status: 'pending',
       active: true,
       createdAt: Timestamp.now(),
       restaurantId,
     };
-
     try {
       const docRef = await addDoc(collection(db, 'orders'), orderPayload);
       setCurrentOrder({ ...orderPayload, id: docRef.id });
       setCart([]);
-      setShowPaymentReview(false); // Close review after submission
-      setShowCart(true); // Show cart again after order is submitted
+      setShowPaymentReview(false);
+      setShowCart(true);
     } catch (error) {
-      console.error('Failed to create order:', error);
       alert('Failed to submit order. Please try again.');
     }
   };
@@ -455,8 +368,7 @@ const RestaurantPage = () => {
   const handleConfirmReceived = async (orderId) => {
     try {
       await updateDoc(doc(db, 'orders', orderId), { status: 'completed' });
-    } catch (error) {
-      console.error('Error confirming order received:', error);
+    } catch {
       alert('Failed to confirm order. Please try again.');
     }
   };
@@ -464,159 +376,138 @@ const RestaurantPage = () => {
   const handleCloseTrackOrder = async (orderId) => {
     try {
       await updateDoc(doc(db, 'orders', orderId), { active: false });
-      // The onSnapshot listener will automatically set currentOrder to null since active is now false
-    } catch (error) {
-      console.error('Error closing track order:', error);
-      alert('Failed to close track order. Please try again.');
+    } catch {
+      alert('Failed to close order. Please try again.');
     }
   };
 
-  const filteredDishes = dishes.filter(dish =>
-    dish.name.toLowerCase().includes(searchTerm.toLowerCase())
+  // Filtering and grouping
+  const filteredDishes = dishes.filter(d =>
+    d.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const dishesByCategory = filteredDishes.reduce((acc, dish) => {
-    if (!acc[dish.category]) acc[dish.category] = [];
+    acc[dish.category] = acc[dish.category] || [];
     acc[dish.category].push(dish);
     return acc;
   }, {});
 
-  const categories = Object.entries(dishesByCategory).map(([category, items]) => ({
-    category,
-    count: items.length,
-  }));
+  Object.keys(dishesByCategory).forEach(cat => {
+    dishesByCategory[cat].sort((a, b) => b.price - a.price);
+  });
 
+  const categories = Object.entries(dishesByCategory).map(([category, arr]) => ({
+    category, count: arr.length
+  }));
   categories.unshift({ category: 'All', count: filteredDishes.length });
 
-  const dishesToDisplay =
-    selectedCategory === 'All'
-      ? filteredDishes
-      : dishesByCategory[selectedCategory] || [];
+  const dishesToDisplay = selectedCategory === 'All' ? filteredDishes : dishesByCategory[selectedCategory] || [];
 
   const isOpen = restaurant ? isRestaurantOpen(restaurant.openHours) : false;
 
-  if (loading) return <div className="main-content">Loading dishes...</div>;
-  if (error)
-    return (
-      <div className="main-content">
-        <p className="error-message">{error}</p>
-      </div>
-    );
+  // Find dish for overlay
+  const dishInOverlay = dishes.find(d => d.id === overlayDishId);
 
-  const totalCartItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const totalCartPrice = cart.reduce(
-    (sum, item) => sum + item.quantity * item.price,
-    0
-  );
+  if (loading) return <div className="main-content">Loading...</div>;
+  if (error) return <div className="main-content error-message">{error}</div>;
+
+  const totalCartPrice = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
   return (
-    <div className="main-content restaurant-page-container">
-      {/* Closed Notice */}
-      {!isOpen && (
-        <div className="closed-notice">
-          <p>The restaurant is closed and is not accepting orders.</p>
+    <main className="main-content restaurant-page-container" aria-label={`Restaurant page for ${restaurant?.name || ''}`}>
+      {restaurant?.coverPhotoUrl && (
+        <div className="cover-photo-banner">
+          <img src={restaurant.coverPhotoUrl} alt={`${restaurant.name} Cover Banner`} loading="lazy" />
         </div>
       )}
 
-      {/* Search and Category Tabs */}
-      <div className="search-category-container">
+      {!isOpen && (
+        <section className="closed-notice" role="alert">
+          <p>The restaurant is closed and is not accepting orders.</p>
+        </section>
+      )}
+
+      {/* Search + Category Tabs */}
+      <section className="search-category-container" aria-label="Search in menu and filter by categories">
         <input
-          type="text"
+          type="search"
           placeholder="Search in menu"
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
+          aria-label="Search dishes"
           className="menu-search-input"
         />
-        <div className="category-tabs" role="tablist">
+        <nav className="category-tabs" role="tablist">
           {categories.map(({ category, count }) => (
             <button
               key={category}
               onClick={() => setSelectedCategory(category)}
-              className={`category-tab ${selectedCategory === category ? 'selected' : ''
-                }`}
+              className={`category-tab ${selectedCategory === category ? 'selected' : ''}`}
               aria-pressed={selectedCategory === category}
+              role="tab"
               type="button"
             >
               {category} ({count})
             </button>
           ))}
-        </div>
-      </div>
+        </nav>
+      </section>
 
-      {/* Category Heading & Description */}
-      {selectedCategory !== 'All' && (
-        <div className="category-description-section">
-          <h2 className="category-title">{selectedCategory}</h2>
-          <p className="category-description">
-            {selectedCategory === 'Mains'
-              ? 'Served with java rice & atchara'
-              : 'Delicious dishes curated just for you'}
-          </p>
-        </div>
+      {/* Popular Section */}
+      {popularDishes.length > 0 && (
+        <section className="popular-section" aria-label="Popular dishes section">
+          <h2 className="popular-title">🔥 Popular</h2>
+          <p className="popular-subtitle">Most ordered right now.</p>
+          <div className="popular-dish-list">
+            {popularDishes.map(dish => (
+              <DishCard key={dish.id} dish={dish} onOpenOverlay={openOverlay} isOpen={isOpen} />
+            ))}
+          </div>
+        </section>
       )}
 
-      {/* Dish grid */}
-      {dishesToDisplay.length === 0 ? (
-        <p>No dishes found for this category.</p>
-      ) : (
-        <div className="dish-grid">
-          {dishesToDisplay.map(dish => (
-            <div key={dish.id} className="dish-card">
-              <div className="dish-image-container">
-                <img
-                  src={
-                    dish.imageSrc ||
-                    'https://via.placeholder.com/110x110?text=No+Image'
-                  }
-                  alt={dish.name}
-                  className="dish-image"
-                />
-                <button
-                  aria-label={`Add ${dish.name} to order`}
-                  className="dish-add-btn"
-                  onClick={() => openOverlay(dish.id)}
-                  type="button"
-                  disabled={!isOpen}
-                >
-                  +
-                </button>
+      {/* Dishes grid grouped */}
+      <section className="all-dishes-section" aria-label="All dishes grouped by category">
+        {selectedCategory === 'All' ? (
+          Object.entries(dishesByCategory).map(([category, dishes]) => (
+            <article key={category} className="category-section">
+              <h3 className="category-title">{category}</h3>
+              <div className="category-dish-grid">
+                {dishes.map(dish => (
+                  <DishCard key={dish.id} dish={dish} onOpenOverlay={openOverlay} isOpen={isOpen} />
+                ))}
               </div>
-              <div className="dish-info">
-                <h4 className="dish-name" title={dish.name}>
-                  {dish.name}
-                </h4>
-                <p className="dish-price">₱ {dish.price}</p>
-                <p className="dish-desc" title={dish.description}>
-                  {truncateText(dish.description, 80)}
-                </p>
-              </div>
+            </article>
+          ))
+        ) : (
+          <article className="category-section">
+            <h3 className="category-title">{selectedCategory}</h3>
+            <div className="category-dish-grid">
+              {dishesToDisplay.map(dish => (
+                <DishCard key={dish.id} dish={dish} onOpenOverlay={openOverlay} isOpen={isOpen} />
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+          </article>
+        )}
+      </section>
 
-      {/* Dish overlay */}
+      {/* Dish Overlay Modal */}
       {overlayDishId && dishInOverlay && (
-        <DishOverlay
-          dish={dishInOverlay}
-          onClose={closeOverlay}
-          onAddToCart={handleAddToCart}
-          isOpen={isOpen}
-        />
+        <DishOverlay dish={dishInOverlay} onClose={closeOverlay} onAddToCart={handleAddToCart} isOpen={isOpen} />
       )}
 
-      {/* Movable Cart Panel - conditionally rendered */}
+      {/* Movable Cart */}
       {showCart && (
         <MovableCart
           cart={cart}
-          onRemove={handleRemoveFromCart}
+          onUpdateQuantity={handleUpdateQuantity}
           onCancel={handleCancelOrder}
           onAddOrder={handleReviewPayment}
           isOpen={isOpen}
         />
       )}
 
-      {/* Movable Payment Review Panel */}
+      {/* Payment Review */}
       {showPaymentReview && (
         <MovablePaymentReview
           cart={cart}
@@ -627,7 +518,7 @@ const RestaurantPage = () => {
         />
       )}
 
-      {/* Movable Track Order Panel */}
+            {/* Track Order */}
       {currentOrder && (
         <MovableTrackOrder
           order={currentOrder}
@@ -635,7 +526,7 @@ const RestaurantPage = () => {
           onClose={() => handleCloseTrackOrder(currentOrder.id)}
         />
       )}
-    </div>
+    </main>
   );
 };
 

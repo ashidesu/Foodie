@@ -12,7 +12,7 @@ import {
 import { getFirestore, doc, getDoc, updateDoc, addDoc, collection } from 'firebase/firestore';
 import { auth } from '../firebase'; // Adjust path if needed
 import BusinessApplicationOverlay from './BusinessApplicationOverlay'; // Import the new overlay
-import '../styles/settings.css';  // Existing styles
+import '../styles/settings.css'; // Existing styles
 import '../styles/business-application.css'; // Styles for new overlay
 
 const SettingsOverlay = ({ isOpen, onClose }) => {
@@ -30,8 +30,6 @@ const SettingsOverlay = ({ isOpen, onClose }) => {
   const [verified, setVerified] = useState(false);
   const [verificationActive, setVerificationActive] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState(null);
-
-  // New state to toggle the business application overlay
   const [showBusinessApplication, setShowBusinessApplication] = useState(false);
 
   const db = getFirestore();
@@ -44,7 +42,7 @@ const SettingsOverlay = ({ isOpen, onClose }) => {
         const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          setBusiness(userData.business || false);
+          setBusiness(userData.roles?.business || false);
           setApplicationActive(userData.applicationActive || false);
           setVerified(userData.verified || false);
           setVerificationActive(userData.verificationActive || false);
@@ -134,9 +132,7 @@ const SettingsOverlay = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleSendApplication = async () => {
-    // This original handleSendApplication will be replaced by business app overlay,
-    // so here we open the business application modal instead.
+  const handleSendApplication = () => {
     setShowBusinessApplication(true);
   };
 
