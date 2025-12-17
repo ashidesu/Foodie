@@ -525,9 +525,13 @@ const RestaurantPage = () => {
 
   return (
     <main className="main-content restaurant-page-container" aria-label={`Restaurant page for ${restaurant?.name || ''}`}>
-      {restaurant?.coverPhotoUrl && (
+      {restaurant?.photoURLs.coverURL && (
         <div className="cover-photo-banner">
-          <img src={restaurant.coverPhotoUrl} alt={`${restaurant.name} Cover Banner`} loading="lazy" />
+          <img
+            src={restaurant.photoURLs.coverURL}
+            alt={`${restaurant.name} Cover Banner`}
+            loading="lazy"
+          />
         </div>
       )}
 
