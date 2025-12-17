@@ -37,6 +37,43 @@ const isRestaurantOpen = (openHours) => {
   return now >= openDate && now <= closeDate;
 };
 
+// Helper to render star rating
+const renderStars = (rating) => {
+  const fullStars = Math.floor(rating || 0);
+  const hasHalfStar = (rating || 0) % 1 >= 0.5;
+  const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+
+  const stars = [];
+  for (let i = 0; i < fullStars; i++) {
+    stars.push(
+      <svg key={`full-${i}`} className="star-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="#fe2c55" />
+      </svg>
+    );
+  }
+  if (hasHalfStar) {
+    stars.push(
+      <svg key="half" className="star-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <defs>
+          <linearGradient id="halfStar" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="50%" style={{ stopColor: '#fe2c55', stopOpacity: 1 }} />
+            <stop offset="50%" style={{ stopColor: '#e0e0e0', stopOpacity: 1 }} />
+          </linearGradient>
+        </defs>
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="url(#halfStar)" />
+      </svg>
+    );
+  }
+  for (let i = 0; i < emptyStars; i++) {
+    stars.push(
+      <svg key={`empty-${i}`} className="star-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="#e0e0e0" />
+      </svg>
+    );
+  }
+  return stars;
+};
+
 const OrderPage = () => {
   if (!auth.currentUser) {
     return <Navigate to="/login" />;
@@ -72,7 +109,35 @@ const OrderPage = () => {
           id: doc.id,
           ...doc.data(),
         }));
-        setRestaurants(restaurantsList);
+
+        // Fetch all feedbacks to calculate ratings per restaurant
+        const feedbacksQuery = query(
+          collection(db, 'orders'),
+          where('status', '==', 'completed')
+        );
+        const feedbacksSnapshot = await getDocs(feedbacksQuery);
+        const ratingsMap = {};
+        feedbacksSnapshot.forEach(doc => {
+          const order = doc.data();
+          if (order.feedback && order.feedback.rating) {
+            const rid = order.restaurantId;
+            if (!ratingsMap[rid]) {
+              ratingsMap[rid] = { total: 0, count: 0 };
+            }
+            ratingsMap[rid].total += order.feedback.rating;
+            ratingsMap[rid].count += 1;
+          }
+        });
+
+        // Attach ratings to restaurants
+        const restaurantsWithRatings = restaurantsList.map(r => {
+          const ratingData = ratingsMap[r.id];
+          const averageRating = ratingData ? (ratingData.total / ratingData.count).toFixed(1) : 0;
+          const reviewsCount = ratingData ? ratingData.count : 0;
+          return { ...r, averageRating: parseFloat(averageRating), reviewsCount };
+        });
+
+        setRestaurants(restaurantsWithRatings);
 
         const userId = auth.currentUser.uid;
         const ordersQuery = query(
@@ -84,10 +149,10 @@ const OrderPage = () => {
         const ordersSnapshot = await getDocs(ordersQuery);
         const recentOrderIds = ordersSnapshot.docs.map(doc => doc.data().restaurantId);
         const uniqueRecentIds = [...new Set(recentOrderIds)];
-        const recentRestaurants = restaurantsList.filter(r => uniqueRecentIds.includes(r.id));
+        const recentRestaurants = restaurantsWithRatings.filter(r => uniqueRecentIds.includes(r.id));
         setRecentOrders(recentRestaurants);
 
-        const sortedByRating = [...restaurantsList].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        const sortedByRating = [...restaurantsWithRatings].sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0));
         setTopBrands(sortedByRating.slice(0, 7)); // Fetch 7 for a fuller example
 
       } catch (fetchError) {
@@ -148,6 +213,11 @@ const OrderPage = () => {
 
                     <div className="restaurant-info">
                       <h4 className="restaurant-name">{restaurant.name}</h4>
+                      <div className="restaurant-rating">
+                        {renderStars(restaurant.averageRating)}
+                        <span className="rating-number">{restaurant.averageRating ? restaurant.averageRating.toFixed(1) : 'N/A'}</span>
+                        <span className="reviews-count">({restaurant.reviewsCount} reviews)</span>
+                      </div>
                       <div className={`restaurant-status ${open ? 'open' : 'closed'}`}>
                         {open ? 'Open Now' : 'Closed'}
                         <span className={`status-indicator ${open ? 'green' : 'red'}`} />
@@ -255,6 +325,11 @@ const OrderPage = () => {
 
                     <div className="restaurant-info">
                       <h4 className="restaurant-name">{restaurant.name}</h4>
+                      <div className="restaurant-rating">
+                        {renderStars(restaurant.averageRating)}
+                        <span className="rating-number">{restaurant.averageRating ? restaurant.averageRating.toFixed(1) : 'N/A'}</span>
+                        <span className="reviews-count">({restaurant.reviewsCount} reviews)</span>
+                      </div>
                       <div className={`restaurant-status ${open ? 'open' : 'closed'}`}>
                         {open ? 'Open Now' : 'Closed'}
                         <span className={`status-indicator ${open ? 'green' : 'red'}`} />

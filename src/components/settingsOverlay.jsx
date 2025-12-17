@@ -9,7 +9,7 @@ import {
   EmailAuthProvider,
   linkWithCredential,
 } from 'firebase/auth';
-import { getFirestore, doc, getDoc, updateDoc, addDoc, collection } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, updateDoc, addDoc, collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import { auth } from '../firebase'; // Adjust path if needed
 import BusinessApplicationOverlay from './BusinessApplicationOverlay'; // Import the new overlay
 import '../styles/settings.css'; // Existing styles
@@ -21,6 +21,7 @@ const SettingsOverlay = ({ isOpen, onClose }) => {
   const [business, setBusiness] = useState(false);
   const [applicationActive, setApplicationActive] = useState(false);
   const [applicationStatus, setApplicationStatus] = useState(null);
+  const [rejectionReason, setRejectionReason] = useState(null);
   const [showChangePasswordForm, setShowChangePasswordForm] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -33,6 +34,35 @@ const SettingsOverlay = ({ isOpen, onClose }) => {
   const [showBusinessApplication, setShowBusinessApplication] = useState(false);
 
   const db = getFirestore();
+
+  // Helper function to fetch the most recent rejected application and set state accordingly
+  const fetchMostRecentRejectedApplication = async (userId) => {
+    try {
+      const applicationsRef = collection(db, 'applications');
+      const q = query(
+        applicationsRef,
+        where('uploaderId', '==', userId),
+        where('status', '==', 'rejected'),
+        orderBy('submittedAt', 'desc'),
+        limit(1)
+      );
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const docSnap = querySnapshot.docs[0];
+        const data = docSnap.data();
+        setApplicationStatus(data.status);
+        setRejectionReason(data.rejectionReason || null);
+      } else {
+        setApplicationStatus(null);
+        setRejectionReason(null);
+      }
+    } catch (error) {
+      console.error('Error fetching rejected application:', error);
+      setApplicationStatus(null);
+      setRejectionReason(null);
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -49,9 +79,21 @@ const SettingsOverlay = ({ isOpen, onClose }) => {
 
           if (userData.applicationId) {
             const appDoc = await getDoc(doc(db, 'applications', userData.applicationId));
-            setApplicationStatus(appDoc.exists() ? appDoc.data().status : null);
+            if (appDoc.exists()) {
+              const appData = appDoc.data();
+              setApplicationStatus(appData.status);
+              if (appData.status === 'rejected') {
+                setRejectionReason(appData.rejectionReason || null);
+              } else {
+                setRejectionReason(null);
+              }
+            } else {
+              setApplicationStatus(null);
+              setRejectionReason(null);
+            }
           } else {
             setApplicationStatus(null);
+            setRejectionReason(null);
           }
           if (userData.verificationId) {
             const verDoc = await getDoc(doc(db, 'verifications', userData.verificationId));
@@ -59,12 +101,26 @@ const SettingsOverlay = ({ isOpen, onClose }) => {
           } else {
             setVerificationStatus(null);
           }
+
+          // Additionally, fetch the most recent rejected application for this user
+          await fetchMostRecentRejectedApplication(currentUser.uid);
+
+        } else {
+          setBusiness(false);
+          setApplicationActive(false);
+          setApplicationStatus(null);
+          setRejectionReason(null);
+          setVerified(false);
+          setVerificationActive(false);
+          setVerificationStatus(null);
+          setHasPasswordProvider(false);
         }
       } else {
         setUser(null);
         setBusiness(false);
         setApplicationActive(false);
         setApplicationStatus(null);
+        setRejectionReason(null);
         setVerified(false);
         setVerificationActive(false);
         setVerificationStatus(null);
@@ -194,6 +250,12 @@ const SettingsOverlay = ({ isOpen, onClose }) => {
                         ? 'Your application is under review.'
                         : 'Switch your account to a business account for more features.'}
                   </p>
+                  {applicationStatus === 'rejected' && rejectionReason && (
+                    <p className="rejection-text" style={{ color: '#dc3545', marginTop: '5px' }}>
+                      Rejected: {rejectionReason.reason}
+                      {rejectionReason.otherText ? ` - ${rejectionReason.otherText}` : ''}
+                    </p>
+                  )}
                 </div>
                 {business
                   ? <button className="action-button-text" onClick={handleGoToBusinessSite}>Go to site</button>
@@ -269,15 +331,36 @@ const SettingsOverlay = ({ isOpen, onClose }) => {
 
               <h3 className="section-subtitle">More</h3>
 
-              <div className="setting-item" onClick={() => navigate('/about')} tabIndex={0} role="button" onKeyDown={(e) => { if (e.key === 'Enter') navigate('/about'); }} style={{ cursor: 'pointer' }}>
+              <div
+                className="setting-item"
+                onClick={() => navigate('/about')}
+                tabIndex={0}
+                role="button"
+                onKeyDown={(e) => { if (e.key === 'Enter') navigate('/about'); }}
+                style={{ cursor: 'pointer' }}
+              >
                 <strong>About</strong>
               </div>
 
-              <div className="setting-item" onClick={() => navigate('/privacy-policy')} tabIndex={0} role="button" onKeyDown={(e) => { if (e.key === 'Enter') navigate('/privacy-policy'); }} style={{ cursor: 'pointer' }}>
+              <div
+                className="setting-item"
+                onClick={() => navigate('/privacy-policy')}
+                tabIndex={0}
+                role="button"
+                onKeyDown={(e) => { if (e.key === 'Enter') navigate('/privacy-policy'); }}
+                style={{ cursor: 'pointer' }}
+              >
                 <strong>Privacy Policy</strong>
               </div>
 
-              <div className="setting-item" onClick={() => navigate('/terms-of-agreement')} tabIndex={0} role="button" onKeyDown={(e) => { if (e.key === 'Enter') navigate('/terms-of-agreement'); }} style={{ cursor: 'pointer' }}>
+              <div
+                className="setting-item"
+                onClick={() => navigate('/terms-of-agreement')}
+                tabIndex={0}
+                role="button"
+                onKeyDown={(e) => { if (e.key === 'Enter') navigate('/terms-of-agreement'); }}
+                style={{ cursor: 'pointer' }}
+              >
                 <strong>Terms of Agreement</strong>
               </div>
 

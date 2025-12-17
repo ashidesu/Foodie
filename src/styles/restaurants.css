@@ -521,3 +521,19 @@
         gap: 15px;
     }
 }
+.toggle-reviews-btn {
+    background-color: #2a2a2a;
+    border: none;
+    border-radius: 4px;
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 12px 24px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-bottom: 20px;
+}
+
+.toggle-reviews-btn:hover {
+    background-color: #353535;
+}

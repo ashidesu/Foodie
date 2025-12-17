@@ -174,6 +174,7 @@ const RestaurantPage = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [lastDoc, setLastDoc] = useState(null);
+  const [reviewsExpanded, setReviewsExpanded] = useState(false); // Collapsed by default
 
   // Fetch the restaurant data
   useEffect(() => {
@@ -553,54 +554,59 @@ const RestaurantPage = () => {
         </div>
       </section>
 
-      {/* Recent Feedbacks */}
-      {recentFeedbacks.length > 0 && (
-        <section className="feedbacks-section" aria-label="Recent customer feedbacks">
-          <h2>Recent Reviews</h2>
-          <div className="feedbacks-grid">
-            {displayedFeedbacks.map((feedback) => (
-              <div key={feedback.id} className="feedback-card">
-                <div className="feedback-user">
-                  <img
-                    src={feedback.user.photoURL || 'https://via.placeholder.com/40x40?text=U'}
-                    alt={`${feedback.user.username} profile`}
-                    className="user-avatar"
-                  />
-                  <span className="user-username">{feedback.user.username}</span>
-                </div>
-                <div className="feedback-rating">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <span key={star} className={`star ${star <= feedback.rating ? 'filled' : ''}`}>
-                      ★
-                    </span>
-                  ))}
-                </div>
-                {feedback.comments && <p className="feedback-comments">{feedback.comments}</p>}
-                {feedback.photoURLs.length > 0 && (
-                  <div className="feedback-photos">
-                    {feedback.photoURLs.slice(0, 3).map((url, index) => (
-                      <img key={index} src={url} alt={`Feedback photo ${index + 1}`} className="feedback-photo" />
+      {/* Recent Feedbacks - Collapsible */}
+      <section className="feedbacks-section" aria-label="Recent customer feedbacks">
+        <button onClick={() => setReviewsExpanded(!reviewsExpanded)} className="toggle-reviews-btn" type="button">
+          {reviewsExpanded ? 'Hide Reviews' : 'Show Reviews'} ({recentFeedbacks.length})
+        </button>
+        {reviewsExpanded && recentFeedbacks.length > 0 && (
+          <>
+            <h2>Recent Reviews</h2>
+            <div className="feedbacks-grid">
+              {displayedFeedbacks.map((feedback) => (
+                <div key={feedback.id} className="feedback-card">
+                  <div className="feedback-user">
+                    <img
+                      src={feedback.user.photoURL || 'https://via.placeholder.com/40x40?text=U'}
+                      alt={`${feedback.user.username} profile`}
+                      className="user-avatar"
+                    />
+                    <span className="user-username">{feedback.user.username}</span>
+                  </div>
+                  <div className="feedback-rating">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <span key={star} className={`star ${star <= feedback.rating ? 'filled' : ''}`}>
+                        ★
+                      </span>
                     ))}
                   </div>
-                )}
-                <div className="feedback-date">
-                  {new Date(feedback.submittedAt.seconds * 1000).toLocaleDateString()}
+                  {feedback.comments && <p className="feedback-comments">{feedback.comments}</p>}
+                  {feedback.photoURLs.length > 0 && (
+                    <div className="feedback-photos">
+                      {feedback.photoURLs.slice(0, 3).map((url, index) => (
+                        <img key={index} src={url} alt={`Feedback photo ${index + 1}`} className="feedback-photo" />
+                      ))}
+                    </div>
+                  )}
+                  <div className="feedback-date">
+                    {new Date(feedback.submittedAt.seconds * 1000).toLocaleDateString()}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-          {!showAllReviews && recentFeedbacks.length >= 5 && (
-            <button onClick={handleViewAllReviews} className="view-all-btn" type="button">
-              View All Reviews
-            </button>
-          )}
-          {showAllReviews && hasMore && (
-            <button onClick={handleLoadMore} className="load-more-btn" disabled={loadingMore} type="button">
-              {loadingMore ? 'Loading...' : 'Load More'}
-            </button>
-          )}
-        </section>
-      )}
+              ))}
+            </div>
+            {!showAllReviews && recentFeedbacks.length >= 5 && (
+              <button onClick={handleViewAllReviews} className="view-all-btn" type="button">
+                View All Reviews
+              </button>
+            )}
+            {showAllReviews && hasMore && (
+              <button onClick={handleLoadMore} className="load-more-btn" disabled={loadingMore} type="button">
+                {loadingMore ? 'Loading...' : 'Load More'}
+              </button>
+            )}
+          </>
+        )}
+      </section>
 
       {/* Search + Category Tabs */}
       <section className="search-category-container" aria-label="Search in menu and filter by categories">
