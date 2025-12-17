@@ -1,3 +1,4 @@
+// Modified Login.js
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { auth, db } from '../firebase'; // Assuming db is exported from firebase.js
@@ -43,19 +44,16 @@ const Login = () => {
             const result = await signInWithPopup(auth, provider);
             const user = result.user;
 
-            // Check if user document exists in Firestore, if not, create it
+            // Check if user document exists in Firestore
             const userDocRef = doc(db, 'users', user.uid);
             const userDocSnap = await getDoc(userDocRef);
             if (!userDocSnap.exists()) {
-                await setDoc(userDocRef, {
-                    email: user.email,
-                    displayName: user.displayName,
-                    photoURL: user.photoURL,
-                    createdAt: new Date(),
-                });
+                // For new users, navigate to onboarding
+                navigate('/onboarding');
+            } else {
+                // Existing users go to home
+                navigate('/home');
             }
-
-            navigate('/home');
         } catch (error) {
             setError(error.message);
         }

@@ -17,6 +17,28 @@ import VideoSidebar from './VideoSidebar';
 import { useNavigate } from 'react-router-dom'; // Added for navigation
 import '../styles/feed.css';
 
+// Skeleton component for loading state
+const SkeletonVideoBox = () => {
+  return (
+    <div className='videoBox'>
+      <div className='videoContainer'>
+        <div className="videoBorder">
+          {/* Skeleton for video */}
+          <div className="skeleton-video"></div>
+          {/* Skeleton for uploader details */}
+          <div className="uploaderDetails">
+            <div className="skeleton-text"></div>
+            <div className="skeleton-text"></div>
+            <div className="skeleton-text"></div>
+          </div>
+        </div>
+        {/* Skeleton for sidebar */}
+        <div className="skeleton-sidebar"></div>
+      </div>
+    </div>
+  );
+};
+
 const MainContent = () => {
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,7 +61,17 @@ const MainContent = () => {
     fetchRecommendedVideos();
   }, []);
 
-  if (loading) return <div>Loading videos...</div>;
+  if (loading) {
+    return (
+      <main className="main-content">
+        {/* Render multiple skeleton loaders while loading */}
+        {Array.from({ length: 5 }).map((_, index) => (
+          <SkeletonVideoBox key={index} />
+        ))}
+      </main>
+    );
+  }
+
   if (!videos.length) return <div>No videos available</div>;
 
   return (
@@ -210,29 +242,11 @@ const VideoBox = ({ video }) => {
           {/* Volume Control */}
           <div
             className="volume-control"
-            style={{
-              position: 'absolute',
-              top: '10px',
-              left: '10px',
-              zIndex: 10,
-              display: 'flex',
-              alignItems: 'center',
-            }}
             onMouseEnter={() => setIsVolumeHovered(true)}
             onMouseLeave={() => setIsVolumeHovered(false)}
           >
             <button
               onClick={toggleMute}
-              style={{
-                background: 'rgba(0, 0, 0, 0.5)',
-                border: 'none',
-                borderRadius: '50%',
-                padding: '8px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
               aria-label="Toggle mute"
             >
               {getVolumeIcon()}
@@ -245,15 +259,6 @@ const VideoBox = ({ video }) => {
                 step="0.01"
                 value={volume}
                 onChange={handleVolumeChange}
-                style={{
-                  width: '80px',
-                  height: '4px',
-                  background: 'rgba(255, 255, 255, 0.5)',
-                  borderRadius: '2px',
-                  outline: 'none',
-                  cursor: 'pointer',
-                  marginLeft: '8px',
-                }}
                 aria-label="Volume slider"
               />
             )}
@@ -262,19 +267,7 @@ const VideoBox = ({ video }) => {
           {video.uploaderRestaurantId && (
             <button
               onClick={handleVisitRestaurant}
-              style={{
-                position: 'absolute',
-                top: '10px',
-                right: '10px',
-                zIndex: 10,
-                background: 'rgba(0, 0, 0, 0.5)',
-                border: 'none',
-                borderRadius: '4px',
-                padding: '4px 8px',
-                color: 'white',
-                fontSize: '12px',
-                cursor: 'pointer',
-              }}
+              className="restaurant-button"
               aria-label="Visit restaurant"
             >
               Visit Restaurant

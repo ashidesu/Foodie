@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import '../styles/restaurants.css';
 import { useParams } from 'react-router-dom';
 import { getAuth } from 'firebase/auth';
@@ -14,7 +14,9 @@ import {
   onSnapshot,
   updateDoc,
   doc,
-  getDoc
+  getDoc,
+  limit,
+  startAfter
 } from 'firebase/firestore';
 import supabase from '../supabase';
 import MovablePaymentReview from './movable-payment-review.jsx';
@@ -55,7 +57,7 @@ const isRestaurantOpen = (openHours) => {
 };
 
 // DishCard component that opens overlay on plus button click
-const DishCard = ({ dish, onOpenOverlay, isOpen }) => {
+const DishCard = ({ dish, onOpenOverlay, isOpen, width, height }) => {
   const renderPrice = (price) => {
     if (typeof price === 'number') return `₱ ${price.toFixed(0)}`;
     if (typeof price === 'string')
@@ -63,7 +65,12 @@ const DishCard = ({ dish, onOpenOverlay, isOpen }) => {
     return 'Price N/A';
   };
   return (
-    <div className="dish-card" tabIndex={0} aria-label={`Dish: ${dish.name}, Price: ${dish.price}`}>
+    <div 
+      className="dish-card" 
+      tabIndex={0} 
+      aria-label={`Dish: ${dish.name}, Price: ${dish.price}`}
+      style={{ width: `${width}px`, height: `${height}px` }}
+    >
       <div className="dish-image-container">
         <img
           src={dish.imageSrc || 'https://via.placeholder.com/150x150?text=No+Image'}
@@ -166,6 +173,41 @@ const RestaurantPage = () => {
   const [showPaymentReview, setShowPaymentReview] = useState(false);
   const [showCart, setShowCart] = useState(true);
   const [popularDishes, setPopularDishes] = useState([]);
+  const [recentFeedbacks, setRecentFeedbacks] = useState([]);
+  const [averageRating, setAverageRating] = useState(0);
+  const [showAllReviews, setShowAllReviews] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [lastDoc, setLastDoc] = useState(null);
+  const [cardDimensions, setCardDimensions] = useState({ width: 250, height: 125 }); // Default for desktop
+
+  const gridRef = useRef(null);
+
+  // Function to calculate card dimensions
+  const calculateCardDimensions = useCallback(() => {
+    if (!gridRef.current) return;
+
+    const container = gridRef.current.parentElement; // Assuming the grid is inside a container
+    const containerWidth = container.offsetWidth;
+    const gap = 20; // From CSS
+    const minCardWidth = window.innerWidth <= 480 ? 200 : 250; // Mobile: 200px, Desktop: 250px
+    const preferredColumns = 3; // Aim to fit 3 cards
+
+    // Calculate card width for preferred columns
+    const totalGapWidth = (preferredColumns - 1) * gap;
+    let cardWidth = (containerWidth - totalGapWidth) / preferredColumns;
+
+    // If cardWidth is less than minCardWidth, reduce columns
+    let numColumns = preferredColumns;
+    while (cardWidth < minCardWidth && numColumns > 1) {
+      numColumns--;
+      cardWidth = (containerWidth - (numColumns - 1) * gap) / numColumns;
+    }
+
+    const cardHeight = cardWidth / 2; // Maintain 2:1 aspect ratio
+
+    setCardDimensions({ width: cardWidth, height: cardHeight });
+  }, []);
 
   // Fetch the restaurant data
   useEffect(() => {
@@ -271,6 +313,97 @@ const RestaurantPage = () => {
     fetchPopularDishes();
   }, [restaurantId, dishes]);
 
+  // Fetch feedbacks and calculate average rating
+  const fetchFeedbacks = useCallback(async (loadMore = false) => {
+    try {
+      setLoadingMore(true);
+      const ordersRef = collection(db, 'orders');
+      let q = query(
+        ordersRef,
+        where('restaurantId', '==', restaurantId),
+        where('status', '==', 'completed'),
+        orderBy('feedback.submittedAt', 'desc'),
+        limit(5)
+      );
+
+      if (loadMore && lastDoc) {
+        q = query(q, startAfter(lastDoc));
+      }
+
+      const snapshot = await getDocs(q);
+      if (snapshot.docs.length < 5) {
+        setHasMore(false);
+      }
+
+      const feedbacks = [];
+      let totalRating = 0;
+      let ratingCount = 0;
+      const userIds = new Set();
+
+      snapshot.forEach(docSnap => {
+        const order = docSnap.data();
+        if (order.feedback) {
+          feedbacks.push({
+            id: docSnap.id,
+            userId: order.userId,
+            rating: order.feedback.rating,
+            comments: order.feedback.comments,
+            photoURLs: order.feedback.photoURLs || [],
+            submittedAt: order.feedback.submittedAt,
+          });
+          totalRating += order.feedback.rating;
+          ratingCount += 1;
+          userIds.add(order.userId);
+        }
+      });
+
+      // Fetch user data for each unique userId
+      const userPromises = Array.from(userIds).map(async (userId) => {
+        const userDoc = await getDoc(doc(db, 'users', userId));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          return {
+            userId,
+            username: userData.username || userData.displayName || 'Anonymous',
+            photoURL: userData.photoURL || '',
+          };
+        }
+        return { userId, username: 'Anonymous', photoURL: '' };
+      });
+
+      const users = await Promise.all(userPromises);
+      const userMap = users.reduce((map, user) => {
+        map[user.userId] = user;
+        return map;
+      }, {});
+
+      // Attach user data to feedbacks
+      const feedbacksWithUsers = feedbacks.map(fb => ({
+        ...fb,
+        user: userMap[fb.userId] || { username: 'Anonymous', photoURL: '' },
+      }));
+
+      if (loadMore) {
+        setRecentFeedbacks(prev => [...prev, ...feedbacksWithUsers]);
+      } else {
+        setRecentFeedbacks(feedbacksWithUsers);
+        setAverageRating(ratingCount > 0 ? (totalRating / ratingCount).toFixed(1) : 0);
+      }
+
+      if (snapshot.docs.length > 0) {
+        setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
+      }
+    } catch (error) {
+      console.error('Error fetching feedbacks:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [restaurantId, lastDoc]);
+
+  useEffect(() => {
+    fetchFeedbacks();
+  }, [fetchFeedbacks]);
+
   // Listen for user’s active order
   useEffect(() => {
     const auth = getAuth();
@@ -296,6 +429,14 @@ const RestaurantPage = () => {
 
     return () => unsub();
   }, [restaurantId]);
+
+  // Calculate card dimensions on mount and resize
+  useEffect(() => {
+    calculateCardDimensions();
+    const handleResize = () => calculateCardDimensions();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [calculateCardDimensions]);
 
   // Handlers
   const openOverlay = (dishId) => setOverlayDishId(dishId);
@@ -381,6 +522,14 @@ const RestaurantPage = () => {
     }
   };
 
+  const handleViewAllReviews = () => {
+    setShowAllReviews(true);
+  };
+
+  const handleLoadMore = () => {
+    fetchFeedbacks(true);
+  };
+
   // Filtering and grouping
   const filteredDishes = dishes.filter(d =>
     d.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -413,6 +562,8 @@ const RestaurantPage = () => {
 
   const totalCartPrice = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
+  const displayedFeedbacks = showAllReviews ? recentFeedbacks : recentFeedbacks.slice(0, 5);
+
   return (
     <main className="main-content restaurant-page-container" aria-label={`Restaurant page for ${restaurant?.name || ''}`}>
       {restaurant?.coverPhotoUrl && (
@@ -424,6 +575,72 @@ const RestaurantPage = () => {
       {!isOpen && (
         <section className="closed-notice" role="alert">
           <p>The restaurant is closed and is not accepting orders.</p>
+        </section>
+      )}
+
+      {/* Restaurant Info with Rating */}
+      <section className="restaurant-info" aria-label="Restaurant information">
+        <h1 className="restaurant-name">{restaurant?.name || 'Restaurant'}</h1>
+        <div className="rating-section">
+          <div className="average-rating">
+            <span className="rating-stars">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <span key={star} className={`star ${star <= Math.floor(averageRating) ? 'filled' : ''}`}>
+                  ★
+                </span>
+              ))}
+            </span>
+            <span className="rating-value">{averageRating} ({recentFeedbacks.length} reviews)</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Recent Feedbacks */}
+      {recentFeedbacks.length > 0 && (
+        <section className="feedbacks-section" aria-label="Recent customer feedbacks">
+          <h2>Recent Reviews</h2>
+          <div className="feedbacks-grid">
+            {displayedFeedbacks.map((feedback) => (
+              <div key={feedback.id} className="feedback-card">
+                <div className="feedback-user">
+                  <img
+                    src={feedback.user.photoURL || 'https://via.placeholder.com/40x40?text=U'}
+                    alt={`${feedback.user.username} profile`}
+                    className="user-avatar"
+                  />
+                  <span className="user-username">{feedback.user.username}</span>
+                </div>
+                <div className="feedback-rating">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <span key={star} className={`star ${star <= feedback.rating ? 'filled' : ''}`}>
+                      ★
+                    </span>
+                  ))}
+                </div>
+                {feedback.comments && <p className="feedback-comments">{feedback.comments}</p>}
+                {feedback.photoURLs.length > 0 && (
+                  <div className="feedback-photos">
+                    {feedback.photoURLs.slice(0, 3).map((url, index) => (
+                      <img key={index} src={url} alt={`Feedback photo ${index + 1}`} className="feedback-photo" />
+                    ))}
+                  </div>
+                )}
+                <div className="feedback-date">
+                  {new Date(feedback.submittedAt.seconds * 1000).toLocaleDateString()}
+                </div>
+              </div>
+            ))}
+          </div>
+          {!showAllReviews && recentFeedbacks.length >= 5 && (
+            <button onClick={handleViewAllReviews} className="view-all-btn" type="button">
+              View All Reviews
+            </button>
+          )}
+          {showAllReviews && hasMore && (
+            <button onClick={handleLoadMore} className="load-more-btn" disabled={loadingMore} type="button">
+              {loadingMore ? 'Loading...' : 'Load More'}
+            </button>
+          )}
         </section>
       )}
 
@@ -472,9 +689,9 @@ const RestaurantPage = () => {
           Object.entries(dishesByCategory).map(([category, dishes]) => (
             <article key={category} className="category-section">
               <h3 className="category-title">{category}</h3>
-              <div className="category-dish-grid">
+              <div className="category-dish-grid" ref={gridRef}>
                 {dishes.map(dish => (
-                  <DishCard key={dish.id} dish={dish} onOpenOverlay={openOverlay} isOpen={isOpen} />
+                  <DishCard key={dish.id} dish={dish} onOpenOverlay={openOverlay} isOpen={isOpen} width={cardDimensions.width} height={cardDimensions.height} />
                 ))}
               </div>
             </article>
@@ -482,9 +699,9 @@ const RestaurantPage = () => {
         ) : (
           <article className="category-section">
             <h3 className="category-title">{selectedCategory}</h3>
-            <div className="category-dish-grid">
+            <div className="category-dish-grid" ref={gridRef}>
               {dishesToDisplay.map(dish => (
-                <DishCard key={dish.id} dish={dish} onOpenOverlay={openOverlay} isOpen={isOpen} />
+                <DishCard key={dish.id} dish={dish} onOpenOverlay={openOverlay} isOpen={isOpen} width={cardDimensions.width} height={cardDimensions.height} />
               ))}
             </div>
           </article>
@@ -518,7 +735,7 @@ const RestaurantPage = () => {
         />
       )}
 
-            {/* Track Order */}
+      {/* Track Order */}
       {currentOrder && (
         <MovableTrackOrder
           order={currentOrder}

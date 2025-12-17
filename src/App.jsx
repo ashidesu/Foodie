@@ -9,10 +9,10 @@ import Explore from './components/Explore';
 import Profile from './components/Profile';
 import ViewProfile from './components/ViewProfile';
 import Restaurant from './components/Restaurant'
-
 import { auth } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useState, useEffect } from 'react';
+import Onboarding from './components/Onboarding';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -78,7 +78,12 @@ function App() {
         <Route
           path="/restaurant/:id"
           element={<Restaurant />} />
+        <Route
+          path="/onboarding"
+          element={<Onboarding />}
+        />
       </Routes>
+
     </Router>
   );
 }
